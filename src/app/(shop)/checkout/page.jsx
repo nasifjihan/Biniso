@@ -1,7 +1,7 @@
 "use client";
 
 import { useCartStore } from "@/store/cartStore";
-import { createOrder } from "../actions/createOrder";
+import { createOrder } from "../../actions/createOrder";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 

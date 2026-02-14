@@ -14,7 +14,7 @@ export async function POST(req) {
 
   const upload = await new Promise((resolve, reject) => {
     cloudinary.uploader
-      .upload_stream({ folder: "products" }, (err, result) => {
+      .upload_stream({ folder: "Biniso/products" }, (err, result) => {
         if (err) reject(err);
         resolve(result);
       })

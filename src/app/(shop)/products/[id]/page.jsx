@@ -19,7 +19,6 @@ export default async function ProductDetails({ params }) {
 
         <div className="text-2xl font-bold text-primary">৳ {product.price}</div>
 
-        {/* <Button size="lg">Add to Cart</Button> */}
         <AddToCartButton product={product} />
       </div>
     </div>

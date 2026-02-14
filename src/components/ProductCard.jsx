@@ -21,7 +21,7 @@ export default function ProductCard({ product }) {
           <span className="text-primary font-bold text-lg">
             ৳ {product.price}
           </span>
-          <Link href={`/product/${product.id}`}>
+          <Link href={`/products/${product.id}`}>
             <Button size="sm">View</Button>
           </Link>
         </div>

@@ -1,12 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useTheme } from "next-themes";
 import { useCartStore } from "@/store/cartStore";
-import { Button } from "@/components/ui/button";
+import ThemeToggle from "../ThemeToggle";
+import { Search, Heart, UserRound } from "lucide-react";
 
 export default function Navbar() {
-  const { theme, setTheme } = useTheme();
   const cart = useCartStore((s) => s.cart);
   const count = cart.reduce((s, i) => s + i.quantity, 0);
 
@@ -32,7 +31,6 @@ export default function Navbar() {
           <Link href="/order-success">Order Success</Link>
           <Link href="/products/1">Product Details</Link>
 
-
           {/* Cart */}
           <Link href="/cart" className="relative">
             🛒
@@ -43,14 +41,18 @@ export default function Navbar() {
             )}
           </Link>
 
-          {/* Dark Toggle */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-          >
-            {theme === "dark" ? "☀️" : "🌙"}
-          </Button>
+          <div className="flex items-center gap-3">
+            <button className="size-9 rounded-md border flex items-center justify-center">
+              <Search className="size-4" />
+            </button>
+            <button className="size-9 rounded-md border flex items-center justify-center">
+              <Heart className="size-4" />
+            </button>
+            <button className="size-9 rounded-md border flex items-center justify-center">
+              <UserRound className="size-4" />
+            </button>
+          </div>
+          <ThemeToggle />
         </nav>
       </div>
     </header>

@@ -46,7 +46,6 @@ export default function AdminProducts() {
     <div className="p-10 space-y-10">
       <h1 className="text-3xl font-bold">Product Management</h1>
 
-      {/* Add Product */}
       <form onSubmit={handleSubmit} className="space-y-4 max-w-lg">
         <input
           name="name"
@@ -75,7 +74,6 @@ export default function AdminProducts() {
         <Button>Add Product</Button>
       </form>
 
-      {/* Product List */}
       <div className="grid md:grid-cols-3 gap-6">
         {products.map((p) => (
           <ProductItem key={p.id} product={p} refresh={fetchProducts} />

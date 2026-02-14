@@ -18,7 +18,6 @@ export default async function AdminOrdersPage() {
             key={order.id}
             className="border rounded-2xl p-6 space-y-4 shadow-sm"
           >
-            {/* Order Header */}
             <div className="flex justify-between">
               <div>
                 <p className="font-semibold">Order ID: {order.id}</p>
@@ -40,7 +39,6 @@ export default async function AdminOrdersPage() {
               </Badge>
             </div>
 
-            {/* Customer Info */}
             <div className="text-sm space-y-1">
               <p>
                 <strong>Name:</strong> {order.customer_name}
@@ -58,7 +56,6 @@ export default async function AdminOrdersPage() {
               )}
             </div>
 
-            {/* Items */}
             <div className="border-t pt-3 space-y-2">
               {order.order_items.map((item, i) => (
                 <div key={i} className="flex justify-between text-sm">
@@ -70,7 +67,6 @@ export default async function AdminOrdersPage() {
               ))}
             </div>
 
-            {/* Total */}
             <div className="text-right font-bold text-lg">
               Total: ৳ {order.total}
             </div>
