@@ -2,12 +2,15 @@
 
 import Link from "next/link";
 import { useCartStore } from "@/store/cartStore";
+import { useFavoritesStore } from "@/store/favoritesStore";
 import ThemeToggle from "../ThemeToggle";
 import { Search, Heart, UserRound } from "lucide-react";
+import { Button } from "../ui/button";
 
 export default function Navbar() {
   const cart = useCartStore((s) => s.cart);
   const count = cart.reduce((s, i) => s + i.quantity, 0);
+  const favoriteCount = useFavoritesStore((s) => s.ids.length);
 
   return (
     <header className="border-b sticky top-0 bg-background z-50">
@@ -19,19 +22,8 @@ export default function Navbar() {
         <nav className="flex items-center gap-6">
           <Link href="/">Home</Link>
           <Link href="/products">Products</Link>
-          <Link href="/about">About</Link>
-          <Link href="/contact">Contact</Link>
-          <Link href="/orders">Orders</Link>
-          <Link href="/admin">Admin</Link>
-          <Link href="/admin/login">Login</Link>
-          <Link href="/admin/orders">Orders</Link>
-          <Link href="/admin/products">Products</Link>
-          <Link href="/cart">Cart</Link>
           <Link href="/checkout">Checkout</Link>
-          <Link href="/order-success">Order Success</Link>
-          <Link href="/products/1">Product Details</Link>
 
-          {/* Cart */}
           <Link href="/cart" className="relative">
             🛒
             {count > 0 && (
@@ -42,17 +34,24 @@ export default function Navbar() {
           </Link>
 
           <div className="flex items-center gap-3">
-            <button className="size-9 rounded-md border flex items-center justify-center">
+            <Button variant="outline" size="icon">
               <Search className="size-4" />
-            </button>
-            <button className="size-9 rounded-md border flex items-center justify-center">
-              <Heart className="size-4" />
-            </button>
-            <button className="size-9 rounded-md border flex items-center justify-center">
+            </Button>
+            <Button variant="outline" size="icon" asChild>
+              <Link href="/favorites" className="relative">
+                <Heart className="size-4" />
+                {favoriteCount > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-[10px] px-1.5 rounded-full">
+                    {favoriteCount}
+                  </span>
+                )}
+              </Link>
+            </Button>
+            <Button variant="outline" size="icon">
               <UserRound className="size-4" />
-            </button>
+            </Button>
+            <ThemeToggle />
           </div>
-          <ThemeToggle />
         </nav>
       </div>
     </header>

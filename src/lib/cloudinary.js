@@ -6,20 +6,4 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-export async function POST(req) {
-  const data = await req.formData();
-  const file = data.get("file");
-
-  const buffer = Buffer.from(await file.arrayBuffer());
-
-  const upload = await new Promise((resolve, reject) => {
-    cloudinary.uploader
-      .upload_stream({ folder: "Biniso/products" }, (err, result) => {
-        if (err) reject(err);
-        resolve(result);
-      })
-      .end(buffer);
-  });
-
-  return Response.json({ url: upload.secure_url });
-}
+export { cloudinary };

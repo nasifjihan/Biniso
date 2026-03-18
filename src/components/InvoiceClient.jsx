@@ -5,18 +5,25 @@ import { useReactToPrint } from "react-to-print";
 import { Button } from "@/components/ui/button";
 
 export default function InvoiceClient({ order }) {
-  const printRef = useRef();
+  const contentRef = useRef(null);
+  const handlePrint = useReactToPrint({ contentRef });
 
-  const handlePrint = useReactToPrint({
-    content: () => printRef.current,
-  });
+  if (!order) {
+    return (
+      <div className="container mx-auto py-10">
+        <div className="text-sm text-muted-foreground">
+          Invoice not available.
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-10 space-y-6">
       <Button onClick={handlePrint}>Print Invoice</Button>
 
       <div
-        ref={printRef}
+        ref={contentRef}
         className="bg-white p-10 text-black max-w-3xl mx-auto"
       >
         {/* Header */}
@@ -53,9 +60,9 @@ export default function InvoiceClient({ order }) {
             </tr>
           </thead>
           <tbody>
-            {order.order_items.map((item, i) => (
+            {(order.order_items || []).map((item, i) => (
               <tr key={i}>
-                <td className="border p-2">{item.products.name}</td>
+                <td className="border p-2">{item.products?.name || "-"}</td>
                 <td className="border p-2 text-center">{item.quantity}</td>
                 <td className="border p-2 text-center">৳ {item.price}</td>
                 <td className="border p-2 text-center">

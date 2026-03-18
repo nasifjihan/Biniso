@@ -1,12 +1,6 @@
-import { dirname } from "path";
-import { fileURLToPath } from "url";
 import globals from "globals";
 import js from "@eslint/js";
 import prettierConfig from "eslint-config-prettier";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const compat = null;
 
 export default [
   // IGNORE PATTERNS
@@ -45,12 +39,10 @@ export default [
     rules: {
       "no-inner-declarations": "error",
       "no-unsafe-optional-chaining": "error",
+      "no-unused-vars": "off",
       curly: ["error", "multi-line"],
       eqeqeq: ["error", "smart"],
-      "no-console":
-        process.env.NODE_ENV === "production"
-          ? ["error", { allow: ["warn", "error"] }]
-          : "off",
+      "no-console": "off",
     },
   },
 

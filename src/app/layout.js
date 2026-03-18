@@ -1,7 +1,6 @@
-import Navbar from "@/components/Layout/Navbar";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
-import Footer from "@/components/Layout/Footer";
+import { Toaster } from "@/components/ui/sonner";
 
 // export const metadata = {
 //   title: "Biniso",
@@ -43,9 +42,8 @@ export default function RootLayout({ children }) {
     <html lang="en" suppressHydrationWarning>
       <body className="min-h-screen flex flex-col bg-background text-foreground">
         <ThemeProvider>
-          <Navbar />
-          <main className="flex-1">{children}</main>
-          <Footer />
+          {children}
+          <Toaster />
         </ThemeProvider>
       </body>
     </html>
