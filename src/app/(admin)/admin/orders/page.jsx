@@ -77,6 +77,15 @@ export default async function AdminOrdersPage() {
               )}
             </div>
 
+            {Number(order.discount) > 0 && (
+              <div className="flex justify-between text-sm">
+                <span>
+                  Discount{order.coupon_code ? ` (${order.coupon_code})` : ""}
+                </span>
+                <span>- ৳ {order.discount}</span>
+              </div>
+            )}
+
             <div className="border-t pt-3 space-y-2">
               {order.order_items.map((item, i) => (
                 <div key={i} className="flex justify-between text-sm">

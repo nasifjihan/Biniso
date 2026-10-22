@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useCartStore } from "@/store/cartStore";
 import { createOrder } from "../../actions/createOrder";
+import { validateCoupon } from "@/app/actions/validateCoupon";
 import { parseCheckoutForm } from "@/lib/validation";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -27,12 +28,31 @@ export default function CheckoutPage() {
   const [submitting, setSubmitting] = useState(false);
   const [deliveryMethod, setDeliveryMethod] = useState("inside_dhaka");
   const [fieldErrors, setFieldErrors] = useState({});
+  const [couponCode, setCouponCode] = useState("");
+  const [coupon, setCoupon] = useState(null);
+  const [applying, setApplying] = useState(false);
 
   const deliveryFee = useMemo(() => {
     if (deliveryMethod === "outside_dhaka") return 120;
     if (deliveryMethod === "pickup") return 0;
     return 60;
   }, [deliveryMethod]);
+
+  async function applyCoupon() {
+    setApplying(true);
+    const res = await validateCoupon(couponCode, subtotal);
+    setApplying(false);
+
+    if (!res?.ok) {
+      setCoupon(null);
+      toast.error(res?.error || "That promo code could not be applied");
+      return;
+    }
+
+    setCoupon(res.coupon);
+    setCouponCode(res.coupon.code);
+    toast.success(`${res.coupon.code} applied — ${res.coupon.description}`);
+  }
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -53,6 +73,8 @@ export default function CheckoutPage() {
 
     if (!res?.ok) {
       setFieldErrors(res?.fieldErrors || {});
+      // A code the server rejected is dropped, so the next attempt starts clean.
+      if (res?.fieldErrors?.coupon_code) setCoupon(null);
       toast.error(res?.error || "Failed to place order");
       setSubmitting(false);
       return;
@@ -75,6 +97,8 @@ export default function CheckoutPage() {
     if (res.subtotal != null) nextParams.set("subtotal", String(res.subtotal));
     if (res.delivery_fee != null) nextParams.set("delivery_fee", String(res.delivery_fee));
     if (res.delivery_method) nextParams.set("delivery_method", String(res.delivery_method));
+    if (res.discount) nextParams.set("discount", String(res.discount));
+    if (res.coupon_code) nextParams.set("coupon_code", String(res.coupon_code));
 
     clearCart();
     router.push(`/order-success?${nextParams.toString()}`);
@@ -84,7 +108,8 @@ export default function CheckoutPage() {
     () => cart.reduce((s, i) => s + i.price * i.quantity, 0),
     [cart],
   );
-  const total = subtotal + deliveryFee;
+  const discount = coupon?.discount ?? 0;
+  const total = subtotal - discount + deliveryFee;
 
   return (
     <div className="container mx-auto py-16 space-y-8">
@@ -116,6 +141,12 @@ export default function CheckoutPage() {
                   autoComplete="off"
                   aria-hidden="true"
                   className="hidden"
+                />
+                {/* The code is re-priced on the server; the client value is only a hint. */}
+                <input
+                  type="hidden"
+                  name="coupon_code"
+                  value={coupon?.code || ""}
                 />
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="space-y-2">
@@ -217,6 +248,60 @@ export default function CheckoutPage() {
                 <span className="text-muted-foreground">Subtotal</span>
                 <span>৳ {subtotal}</span>
               </div>
+
+              {coupon ? (
+                <div className="flex items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm">
+                  <span>
+                    <span className="font-medium">{coupon.code}</span>
+                    <span className="text-muted-foreground">
+                      {" "}
+                      — {coupon.description}
+                    </span>
+                  </span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setCoupon(null);
+                      setCouponCode("");
+                    }}
+                  >
+                    Remove
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={couponCode}
+                    onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                    placeholder="Promo code"
+                    aria-label="Promo code"
+                    className="flex-1"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={applyCoupon}
+                    disabled={applying || !couponCode.trim()}
+                  >
+                    {applying ? "Checking..." : "Apply"}
+                  </Button>
+                </div>
+              )}
+              {fieldErrors.coupon_code && !coupon && (
+                <p className="text-sm text-destructive">{fieldErrors.coupon_code}</p>
+              )}
+
+              {discount > 0 && (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">
+                    Discount{coupon ? ` (${coupon.code})` : ""}
+                  </span>
+                  <span className="text-emerald-600">- ৳ {discount}</span>
+                </div>
+              )}
+
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Delivery</span>
                 <span>৳ {deliveryFee}</span>

@@ -54,6 +54,11 @@ function buildOrderHtml(order, heading) {
     ${order.notes ? `<p>Notes: ${order.notes}</p>` : ""}
     ${formatItems(order.items)}
     ${order.subtotal ? `<p>Subtotal: ৳ ${order.subtotal}</p>` : ""}
+    ${
+      Number(order.discount) > 0
+        ? `<p>Discount${order.coupon_code ? ` (${order.coupon_code})` : ""}: - ৳ ${order.discount}</p>`
+        : ""
+    }
     <p><strong>Total: ৳ ${order.total}</strong></p>
   `;
 }

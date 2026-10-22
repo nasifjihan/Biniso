@@ -6,6 +6,7 @@ import { sendOrderEmail, sendOrderConfirmation } from "@/lib/email";
 import { rateLimit } from "@/lib/rateLimit";
 import { parseCheckoutForm } from "@/lib/validation";
 import { variantLabel } from "@/lib/variants";
+import { COUPON_COLUMNS, checkCoupon, normaliseCode } from "@/lib/coupons";
 
 const DELIVERY_FEES = {
   inside_dhaka: 60,
@@ -151,8 +152,34 @@ export async function createOrder(formData, cart) {
     }
 
     const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+
+    // The discount is worked out here, never from the client's claimed total.
+    const couponCode = normaliseCode(formData.get("coupon_code"));
+    let appliedCoupon = null;
+    let discount = 0;
+
+    if (couponCode) {
+      const { data: coupon, error: couponError } = await supabase
+        .from("coupons")
+        .select(COUPON_COLUMNS)
+        .eq("code", couponCode)
+        .maybeSingle();
+
+      if (couponError) {
+        return { ok: false, error: couponError.message };
+      }
+
+      const check = checkCoupon(coupon, subtotal);
+      if (!check.ok) {
+        return { ok: false, error: check.error, fieldErrors: { coupon_code: check.error } };
+      }
+
+      appliedCoupon = coupon;
+      discount = check.discount;
+    }
+
     const delivery_fee = DELIVERY_FEES[delivery_method];
-    const total = subtotal + delivery_fee;
+    const total = subtotal - discount + delivery_fee;
 
     const { data: order, error: orderError } = await supabase
       .from("orders")
@@ -165,6 +192,8 @@ export async function createOrder(formData, cart) {
           address,
           notes,
           subtotal,
+          coupon_code: appliedCoupon?.code ?? null,
+          discount,
           delivery_method,
           delivery_fee,
           total,
@@ -197,12 +226,14 @@ export async function createOrder(formData, cart) {
 
     // Reserve stock atomically. The SQL function rolls back all of its updates
     // when any line item is short, so a failed reservation changes nothing.
+    const stockItems = items.map(({ product_id, variant_id, quantity }) => ({
+      product_id,
+      variant_id,
+      quantity,
+    }));
+
     const { error: stockError } = await supabase.rpc("decrement_stock", {
-      items: items.map(({ product_id, variant_id, quantity }) => ({
-        product_id,
-        variant_id,
-        quantity,
-      })),
+      items: stockItems,
     });
 
     if (stockError) {
@@ -233,10 +264,35 @@ export async function createOrder(formData, cart) {
       };
     }
 
+    // Count the redemption only once the stock is held, so a failed checkout
+    // never burns a use of the code. The function refuses a code that ran out
+    // of uses (or expired) while this customer was checking out.
+    if (appliedCoupon) {
+      const { data: redeemed, error: redeemError } = await supabase.rpc(
+        "redeem_coupon",
+        { coupon_code: appliedCoupon.code },
+      );
+
+      if (redeemError || !redeemed) {
+        await supabase.rpc("restore_stock", { items: stockItems });
+        await supabase.from("orders").delete().eq("id", order.id);
+
+        return {
+          ok: false,
+          error: redeemError?.message
+            ? redeemError.message
+            : "That promo code is no longer available. Please try again.",
+          fieldErrors: { coupon_code: "That promo code is no longer available." },
+        };
+      }
+    }
+
     const result = {
       ok: true,
       orderId: order.id,
       subtotal,
+      discount,
+      coupon_code: appliedCoupon?.code ?? null,
       delivery_method,
       delivery_fee,
       total,

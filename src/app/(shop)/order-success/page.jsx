@@ -10,6 +10,8 @@ export default function SuccessPage() {
   const orderId = params.get("order");
   const subtotal = params.get("subtotal");
   const deliveryFee = params.get("delivery_fee");
+  const discount = params.get("discount");
+  const couponCode = params.get("coupon_code");
   const total = params.get("total");
   const deliveryMethod = params.get("delivery_method");
 
@@ -41,6 +43,14 @@ export default function SuccessPage() {
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Delivery</span>
                 <span className="capitalize">{deliveryMethod.replaceAll("_", " ")}</span>
+              </div>
+            )}
+            {discount && Number(discount) > 0 && (
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">
+                  Discount{couponCode ? ` (${couponCode})` : ""}
+                </span>
+                <span className="text-emerald-600">- ৳ {discount}</span>
               </div>
             )}
             {deliveryFee && (

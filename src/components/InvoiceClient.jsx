@@ -79,8 +79,20 @@ export default function InvoiceClient({ order }) {
         </table>
 
         {/* Total */}
-        <div className="text-right text-xl font-bold">
-          Grand Total: ৳ {order.total}
+        <div className="text-right space-y-1">
+          {Number(order.discount) > 0 && (
+            <>
+              <div className="text-sm">Subtotal: ৳ {order.subtotal}</div>
+              <div className="text-sm">
+                Discount{order.coupon_code ? ` (${order.coupon_code})` : ""}: -
+                ৳ {order.discount}
+              </div>
+            </>
+          )}
+          {Number(order.delivery_fee) > 0 && (
+            <div className="text-sm">Delivery: ৳ {order.delivery_fee}</div>
+          )}
+          <div className="text-xl font-bold">Grand Total: ৳ {order.total}</div>
         </div>
 
         <p className="mt-10 text-sm text-center">
