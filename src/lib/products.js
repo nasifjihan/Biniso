@@ -23,6 +23,7 @@ export const PRODUCT_SORTS = {
  * browser never downloads the whole table.
  */
 export async function getProductPage({
+  search,
   categoryId,
   minPrice,
   maxPrice,
@@ -32,12 +33,18 @@ export async function getProductPage({
   perPage = 12,
 } = {}) {
   const from = (page - 1) * perPage;
+  // PostgREST reads these characters as query syntax, so they cannot be searched for.
+  const term = String(search ?? "")
+    .replace(/[,()%*\\]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 
   let request = supabase
     .from("products")
     .select("*, category:categories(id, name, slug)", { count: "exact" })
     .eq("status", "active");
 
+  if (term) request = request.ilike("name", `%${term}%`);
   if (categoryId) request = request.eq("category_id", categoryId);
   if (minPrice !== null && minPrice !== undefined) {
     request = request.gte("price", minPrice);

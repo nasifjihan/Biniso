@@ -38,6 +38,14 @@ export default function ProductFilters({ categories, sorts, values, query = "" }
     router.push(qs ? `${pathname}?${qs}` : pathname);
   }
 
+  // Clearing drops this bar's own parameters but keeps the rest of the URL,
+  // so a search results page stays on its query.
+  function clearFilters() {
+    setMin("");
+    setMax("");
+    apply({ category: "", min: "", max: "", stock: "", sort: "newest" });
+  }
+
   const hasFilters = Boolean(
     values.category || values.min || values.max || values.inStockOnly || values.sort !== "newest",
   );
@@ -128,15 +136,7 @@ export default function ProductFilters({ categories, sorts, values, query = "" }
       </div>
 
       {hasFilters && (
-        <Button
-          type="button"
-          variant="ghost"
-          onClick={() => {
-            setMin("");
-            setMax("");
-            router.push(pathname);
-          }}
-        >
+        <Button type="button" variant="ghost" onClick={clearFilters}>
           Clear filters
         </Button>
       )}

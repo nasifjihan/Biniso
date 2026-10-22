@@ -34,8 +34,10 @@ export default function Navbar() {
           </Link>
 
           <div className="flex items-center gap-3">
-            <Button variant="outline" size="icon">
-              <Search className="size-4" />
+            <Button variant="outline" size="icon" asChild>
+              <Link href="/search" aria-label="Search products">
+                <Search className="size-4" />
+              </Link>
             </Button>
             <Button variant="outline" size="icon" asChild>
               <Link href="/favorites" className="relative">
