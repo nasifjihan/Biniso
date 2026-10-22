@@ -62,7 +62,7 @@ export async function createOrder(formData, cart) {
     // Price the order from the database, never from the client cart.
     const { data: products, error: productsError } = await supabase
       .from("products")
-      .select("id, name, price")
+      .select("id, name, price, stock")
       .in(
         "id",
         cart.map((item) => item.id),
@@ -73,7 +73,10 @@ export async function createOrder(formData, cart) {
     }
 
     const productsById = new Map(
-      (products || []).map((p) => [p.id, { name: p.name, price: Number(p.price) }]),
+      (products || []).map((p) => [
+        p.id,
+        { name: p.name, price: Number(p.price), stock: p.stock },
+      ]),
     );
 
     const items = [];
@@ -85,10 +88,23 @@ export async function createOrder(formData, cart) {
           error: "One of the products in your cart is no longer available.",
         };
       }
+
+      const quantity = Math.max(1, Number(item.quantity) || 1);
+      // `stock === null` means the product is not stock-tracked.
+      if (product.stock !== null && quantity > product.stock) {
+        return {
+          ok: false,
+          error:
+            product.stock <= 0
+              ? `${product.name} is out of stock.`
+              : `Only ${product.stock} left of ${product.name}.`,
+        };
+      }
+
       items.push({
         product_id: item.id,
         name: product.name,
-        quantity: Math.max(1, Number(item.quantity) || 1),
+        quantity,
         price: product.price,
       });
     }
@@ -134,6 +150,31 @@ export async function createOrder(formData, cart) {
       // Keep the order table consistent if the items could not be saved.
       await supabase.from("orders").delete().eq("id", order.id);
       return { ok: false, error: itemsError.message || "Failed to save items" };
+    }
+
+    // Reserve stock atomically. The SQL function rolls back all of its updates
+    // when any line item is short, so a failed reservation changes nothing.
+    const { error: stockError } = await supabase.rpc("decrement_stock", {
+      items: items.map(({ product_id, quantity }) => ({ product_id, quantity })),
+    });
+
+    if (stockError) {
+      // Nothing was reserved, so drop the order and let the customer retry.
+      await supabase.from("orders").delete().eq("id", order.id);
+
+      const shortId = /insufficient_stock:([0-9a-fA-F-]{36})/.exec(
+        stockError.message || "",
+      )?.[1];
+      const shortName = shortId
+        ? items.find((i) => i.product_id === shortId)?.name
+        : null;
+
+      return {
+        ok: false,
+        error: shortName
+          ? `${shortName} just went out of stock. Please update your cart.`
+          : "One of the products is no longer available in the requested quantity.",
+      };
     }
 
     const result = {

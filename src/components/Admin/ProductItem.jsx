@@ -30,6 +30,7 @@ export default function ProductItem({ product, refresh, initialEditing = false }
     category: product.category || "",
     featured: !!product.featured,
     status: product.status || "active",
+    stock: product.stock ?? "",
     image: product.image || "",
   });
 
@@ -44,6 +45,7 @@ export default function ProductItem({ product, refresh, initialEditing = false }
         category: form.category.trim(),
         featured: form.featured,
         status: form.status,
+        stock: form.stock,
         image: form.image.trim(),
       };
       const result = await updateProduct(product.id, update);
@@ -136,15 +138,27 @@ export default function ProductItem({ product, refresh, initialEditing = false }
                 }
               />
             </div>
-            <div className="space-y-2">
-              <Label>Category</Label>
-              <Input
-                value={form.category}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, category: e.target.value }))
-                }
-                placeholder="e.g. Electronics"
-              />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Category</Label>
+                <Input
+                  value={form.category}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, category: e.target.value }))
+                  }
+                  placeholder="e.g. Electronics"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Stock</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  value={form.stock}
+                  onChange={(e) => setForm((f) => ({ ...f, stock: e.target.value }))}
+                  placeholder="Empty = not tracked"
+                />
+              </div>
             </div>
             <div className="space-y-2">
               <Label>Image URL</Label>
@@ -183,6 +197,7 @@ export default function ProductItem({ product, refresh, initialEditing = false }
                     category: product.category || "",
                     featured: !!product.featured,
                     status: product.status || "active",
+                    stock: product.stock ?? "",
                     image: product.image || "",
                   });
                 }}

@@ -15,6 +15,9 @@ export default function ProductCard({ product }) {
   const toggleFavorite = useFavoritesStore((s) => s.toggleFavorite);
 
   const favored = isFavorite(product.id);
+  // `stock === null` means the product is not stock-tracked.
+  const tracked = product.stock !== null && product.stock !== undefined;
+  const inStock = !tracked || product.stock > 0;
 
   return (
     <Card className="group overflow-hidden rounded-2xl border bg-card shadow-sm transition-shadow hover:shadow-md">
@@ -53,6 +56,12 @@ export default function ProductCard({ product }) {
             />
           </Button>
         </div>
+
+        {!inStock && (
+          <div className="absolute top-3 left-3 rounded-full bg-destructive px-3 py-1 text-xs font-medium text-white">
+            Out of stock
+          </div>
+        )}
       </div>
 
       <CardContent className="px-5 py-4 space-y-3">
@@ -69,6 +78,7 @@ export default function ProductCard({ product }) {
           <div className="text-primary font-bold text-lg">৳ {product.price}</div>
           <Button
             size="sm"
+            disabled={!inStock}
             onClick={() => {
               addToCart(product, 1);
               toast.success("Added to cart");

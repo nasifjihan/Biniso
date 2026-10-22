@@ -92,11 +92,12 @@ customers.
 
 ## Phase 2 — Catalog depth
 
-- [ ] **P2-01 · Inventory / stock tracking** — priority: high
+- [x] **P2-01 · Inventory / stock tracking** — priority: high
   - There is no stock column, so overselling is possible.
   - Add `stock` to `products`, decrement on order, block add-to-cart when out of stock, show stock in admin.
   - **Acceptance:** ordering beyond available stock is rejected; stock decrements atomically.
-  - **Files:** new migration, `src/app/actions/createOrder.js`, admin product form, `ProductCard`
+  - **Implementation:** `stock` is **nullable** — `NULL` means "not tracked" (always available), so the migration does not put existing products out of stock. Decrementing happens in `decrement_stock(items jsonb)`, which runs as one transaction and raises on shortage so a partial reservation is impossible; it is revoked from `PUBLIC` so only the service role (the checkout action) can call it. When stock runs out mid-checkout the action deletes the order and returns a message naming the product.
+  - **Files:** `supabase/migrations/0002_stock.sql`, `src/app/actions/createOrder.js`, `src/app/actions/createProduct.js`, `updateProduct.js`, admin product form/table, `ProductCard`, `ProductDetail`
 
 - [ ] **P2-02 · Product variants (size / color / SKU)** — priority: medium
   - Only one flat price and image per product.
@@ -122,6 +123,11 @@ customers.
   - Search is a dropdown only.
   - Add `/search?q=` with the full result set and pagination.
   - **Acceptance:** searching returns a shareable, paginated results page.
+
+- [ ] **P2-07 · Restock on cancellation** — priority: medium
+  - P2-01 decrements stock when an order is placed, but `updateOrderStatus` does not return it when an order is `cancelled`, so cancelled orders silently lose inventory.
+  - Restore stock (the inverse of `decrement_stock`) when an order moves to `cancelled`, and only once per order.
+  - **Acceptance:** cancelling an order returns its items to stock; moving an order back out of `cancelled` does not double-count.
 
 ---
 
@@ -221,10 +227,10 @@ These block or shape the phases above — resolve before starting the related ph
 | # | Decision | Blocks | Notes |
 | - | -------- | ------ | ----- |
 | D1 | Payment provider (bKash / Nagad / SSLCommerz / other) | P3-01 | Affects credentials, webhook design and refund flow. |
-| D2 | Are customer accounts in scope, or stay guest-only? | P4-* | Guest-only is simpler; accounts unlock history and tracking. |
+| D2 | Are customer accounts in scope, or stay guest-only? | P4-* | **Resolved:** accounts are in scope. Guest checkout stays available. |
 | D3 | Is VAT/tax required for your market? | P3-06 | Skip if not applicable. |
 | D4 | Production host (Vercel / other) and domain | P1-01, P6-06 | Needed for canonical URLs, sitemap and env config. |
-| D5 | Do you need product variants, or is one price per product enough? | P2-02 | Adds meaningful schema and UI work. |
+| D5 | Do you need product variants, or is one price per product enough? | P2-02 | **Resolved:** variants are required, so P2-02 will add `product_variants` (sku, attributes, price delta, stock). Product-level `stock` stays as the fallback for products without variants. |
 
 ## Progress Log
 
@@ -239,3 +245,4 @@ These block or shape the phases above — resolve before starting the related ph
 | 2026-10-22 | P1-06 | Catalog fetches cached with the `"products"` tag and `revalidateTag("products")` called from product actions, so admin edits show without a rebuild. |
 | 2026-10-22 | P1-07 | Migrated 7 `<img>` usages to `next/image` (cards, detail, hero, promo, cart, admin) with `sizes` and empty-image fallbacks; the blob preview stays a plain `<img>`. `coresg-normal.trae.ai` allow-listed. |
 | 2026-10-22 | P1-08 | Added `zod` and `src/lib/validation.js` (BD phone, email, length limits) shared by the checkout form (inline field errors) and `createOrder` (server-side rejection). |
+| 2026-10-22 | P2-01 | Inventory: nullable `products.stock` (NULL = not tracked) + `0002_stock.sql` with an atomic, service-role-only `decrement_stock()`; `createOrder` pre-checks availability then reserves stock and rolls the order back on shortage; admin gained a Stock field/column; storefront shows out-of-stock and disables add-to-cart. |

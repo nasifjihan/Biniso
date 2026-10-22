@@ -18,6 +18,11 @@ export default function ProductDetail({ product }) {
 
   const favored = useMemo(() => isFavorite(product.id), [isFavorite, product.id]);
 
+  // `stock === null` means the product is not stock-tracked.
+  const tracked = product.stock !== null && product.stock !== undefined;
+  const inStock = !tracked || product.stock > 0;
+  const maxQty = tracked ? Math.max(1, product.stock) : undefined;
+
   return (
     <div className="container mx-auto py-16 grid md:grid-cols-2 gap-10">
       <div className="border rounded-2xl overflow-hidden bg-card">
@@ -55,6 +60,18 @@ export default function ProductDetail({ product }) {
 
         <div className="text-3xl font-bold text-primary">৳ {product.price}</div>
 
+        {tracked && (
+          <div
+            className={
+              inStock
+                ? "text-sm text-muted-foreground"
+                : "text-sm font-medium text-destructive"
+            }
+          >
+            {inStock ? `${product.stock} in stock` : "Out of stock"}
+          </div>
+        )}
+
         <div className="flex items-center gap-3">
           <Button
             variant="outline"
@@ -65,18 +82,32 @@ export default function ProductDetail({ product }) {
           </Button>
           <Input
             value={qty}
-            onChange={(e) => setQty(Math.max(1, Number(e.target.value) || 1))}
+            onChange={(e) =>
+              setQty(
+                Math.max(
+                  1,
+                  Math.min(Number(e.target.value) || 1, maxQty ?? Infinity),
+                ),
+              )
+            }
             type="number"
             min={1}
+            max={maxQty}
             className="w-24 text-center"
           />
-          <Button variant="outline" size="icon" onClick={() => setQty((q) => q + 1)}>
+          <Button
+            variant="outline"
+            size="icon"
+            disabled={tracked && qty >= product.stock}
+            onClick={() => setQty((q) => Math.min(q + 1, maxQty ?? q + 1))}
+          >
             <Plus className="size-4" />
           </Button>
         </div>
 
         <Button
           size="lg"
+          disabled={!inStock}
           onClick={() => {
             addToCart(product, qty);
             toast.success("Added to cart");
@@ -84,7 +115,7 @@ export default function ProductDetail({ product }) {
           className="w-full"
         >
           <ShoppingCart className="size-4" />
-          Add to cart
+          {inStock ? "Add to cart" : "Out of stock"}
         </Button>
       </div>
     </div>

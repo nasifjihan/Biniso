@@ -14,6 +14,12 @@ export async function updateProduct(id, data) {
   const cleanText = (v) => (typeof v === "string" ? v.trim() : v);
   const cleanUrl = (v) =>
     typeof v === "string" ? v.trim().replace(/^`+|`+$/g, "") : v;
+  // Empty means "not stock-tracked" (null).
+  const cleanStock = (v) => {
+    if (v === "" || v === null || v === undefined) return null;
+    const n = Number(v);
+    return Number.isFinite(n) ? Math.max(0, Math.trunc(n)) : null;
+  };
   const update = {
     ...(typeof data?.name === "string" ? { name: cleanText(data.name) } : null),
     ...(data?.price !== undefined
@@ -22,6 +28,7 @@ export async function updateProduct(id, data) {
             typeof data.price === "string" ? Number(data.price) : data.price,
         }
       : null),
+    ...(data?.stock !== undefined ? { stock: cleanStock(data.stock) } : null),
     ...(typeof data?.description === "string"
       ? { description: cleanText(data.description) }
       : null),

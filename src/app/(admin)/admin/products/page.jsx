@@ -40,6 +40,7 @@ export default function AdminProducts() {
     category: "",
     status: "active",
     featured: false,
+    stock: "",
     imageFile: null,
   });
 
@@ -106,6 +107,7 @@ export default function AdminProducts() {
         status: form.status,
         featured: form.featured,
         image: url,
+        stock: form.stock,
       });
       if (!result?.ok) {
         throw new Error(result?.error || "Failed to add product");
@@ -118,6 +120,7 @@ export default function AdminProducts() {
         category: "",
         status: "active",
         featured: false,
+        stock: "",
         imageFile: null,
       });
       await fetchProducts();
@@ -182,16 +185,31 @@ export default function AdminProducts() {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="category">Category</Label>
-                <Input
-                  id="category"
-                  value={form.category}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, category: e.target.value }))
-                  }
-                  placeholder="e.g. Electronics"
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="category">Category</Label>
+                  <Input
+                    id="category"
+                    value={form.category}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, category: e.target.value }))
+                    }
+                    placeholder="e.g. Electronics"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="stock">Stock</Label>
+                  <Input
+                    id="stock"
+                    type="number"
+                    min="0"
+                    value={form.stock}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, stock: e.target.value }))
+                    }
+                    placeholder="Leave empty to not track"
+                  />
+                </div>
               </div>
 
               <div className="space-y-2">
@@ -292,6 +310,7 @@ export default function AdminProducts() {
                   <TableHead>Name</TableHead>
                   <TableHead>Category</TableHead>
                   <TableHead>Price</TableHead>
+                  <TableHead>Stock</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Featured</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -318,6 +337,9 @@ export default function AdminProducts() {
                       {p.category || "-"}
                     </TableCell>
                     <TableCell>৳ {p.price}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {p.stock === null || p.stock === undefined ? "—" : p.stock}
+                    </TableCell>
                     <TableCell className="text-muted-foreground">
                       {p.status}
                     </TableCell>

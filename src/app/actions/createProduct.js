@@ -6,12 +6,18 @@ import { createSupabaseServerClient, requireAdmin } from "@/lib/supabase/server"
 export async function createProduct(data) {
   await requireAdmin();
 
-  const { name, price, description, image, featured, status, category } = data;
+  const { name, price, description, image, featured, status, category, stock } = data;
   const supabase = await createSupabaseServerClient();
 
   const cleanText = (v) => (typeof v === "string" ? v.trim() : v);
   const cleanUrl = (v) =>
     typeof v === "string" ? v.trim().replace(/^`+|`+$/g, "") : v;
+  // Empty means "not stock-tracked" (null).
+  const cleanStock = (v) => {
+    if (v === "" || v === null || v === undefined) return null;
+    const n = Number(v);
+    return Number.isFinite(n) ? Math.max(0, Math.trunc(n)) : null;
+  };
 
   const payload = {
     name: cleanText(name),
@@ -20,6 +26,7 @@ export async function createProduct(data) {
     image: cleanUrl(image),
     featured: !!featured,
     status: cleanText(status) || "active",
+    stock: cleanStock(stock),
     ...(typeof category === "string" && category.trim()
       ? { category: category.trim() }
       : null),
