@@ -19,8 +19,9 @@ order management with status updates, printable invoices, Cloudinary product
 uploads, Supabase email/password auth with `app_metadata.role` admin gating,
 RLS policies, and a documented env template.
 
-Known gaps: no payment gateway, no inventory, no customer accounts, no sitemap,
-no per-product SEO, hardcoded delivery fees/statuses, no tests, static catalog.
+Known gaps: still no automated tests or monitoring (Phase 6), and the admin
+still lacks a role-management UI and a dashboard (Phase 5). A payment gateway
+and tax handling are deliberately out of scope (COD only).
 
 ---
 
@@ -191,7 +192,7 @@ customers.
 
 ---
 
-## Phase 4 — Customer accounts
+## Phase 4 — Customer accounts (COMPLETE)
 
 - [x] **P4-01 · Customer signup / login** — priority: high
   - Only admins can authenticate today; checkout is guest-only.
@@ -224,8 +225,13 @@ customers.
   - **Requires:** run `supabase/migrations/0010_addresses.sql` after `0009`. The checkout prefill and the address page stay silent-empty until it exists.
   - **Notes:** addresses are never read by the service role and are not shown on orders — an order keeps its own snapshot of the delivery address, so editing or deleting an address never rewrites history. There is no "edit" action: correcting an address means deleting it and re-saving, which keeps the rules to add/delete.
 
-- [ ] **P4-05 · Wishlist synced to account** — priority: low
+- [x] **P4-05 · Wishlist synced to account** — priority: low
   - Favorites are localStorage-only; persist them per user.
+  - **Acceptance:** a signed-in customer sees the same wishlist on any device, and a guest's favorites survive signing in.
+  - **Implementation:** `0011_favorites.sql` adds `public.favorites` with a `(user_id, product_id)` primary key (one row per customer per product) and three `user_id = auth.uid()` policies for select/insert/delete; `product_id` cascades on product delete, so a removed product leaves no orphan entries. `loadFavorites()` reads the account list and `pushFavorites(ids)` makes the account match the list the browser is showing — it computes the additions and removals and only touches those rows, so an out-of-date tab can never wipe the wishlist, and `ignoreDuplicates` on the upsert keeps a double save from failing the primary key. `parseFavoriteIds()` (`src/lib/favorites.js`) keeps only unique, well-formed product UUIDs (cap 200) so a tampered or stale local list cannot poison the table. The client-side `favoritesStore` gained `setIds()` and everything else about it — the toggle, the persist key, the guests' behaviour — is unchanged. A new `FavoritesSync` component (mounted once in the `(shop)` layout, renders nothing) does the work: on load it merges the browser's list into the account and adopts the union, then writes every later change back. `LogOutButton` clears the local list on the way out so the next person on a shared device does not see someone else's favorites; they return on the next login.
+  - **Files:** `supabase/migrations/0011_favorites.sql`, `src/lib/favorites.js`, `src/app/actions/loadFavorites.js`, `pushFavorites.js`, `src/components/Account/FavoritesSync.jsx`, `LogOutButton.jsx`, `src/store/favoritesStore.js`, `src/app/(shop)/layout.js`, `src/app/(shop)/account/page.jsx`
+  - **Requires:** run `supabase/migrations/0011_favorites.sql` after `0010`. Until it exists the sync is skipped with a toast and guests are unaffected.
+  - **Notes:** signing in merges rather than replaces, so favorites collected as a guest are not lost, and nothing is written while signed out. The account list is the source of truth while signed in, so removing a favorite on one device removes it everywhere; the local store is only a cache.
 
 ---
 
@@ -303,3 +309,4 @@ These block or shape the phases above — resolve before starting the related ph
 | 2026-10-23 | P4-02 | Order history: `0009_order_user.sql` adds `orders.user_id` (references `auth.users`, `on delete set null`) with an index and select-only RLS for `orders` (`user_id = auth.uid()`) and `order_items` (via the parent order); `createOrder` links the signed-in customer from the session cookie; new `/account/orders` reads through the session client so RLS is the enforcement point, with `getCustomerOrders()` adding a belt-and-braces `user_id` filter and a shared `orderStatusVariant()` now used by the admin list too. Needs `0009_order_user.sql` run in Supabase. |
 | 2026-10-23 | P4-03 | Public order tracking: new `/track` page + `TrackOrderForm` call `lookupOrder()`, which validates the UUID and phone, is rate-limited per IP (10 tries) and compares the last ten digits so `+880…` and `01…` both match; an unknown ID and a wrong phone return the same message so order IDs cannot be enumerated, and the reply exposes only id/status/date/total (service role used because orders are admin-only under RLS). `orderStatusVariant()` and `STATUS_NOTES` moved to the dependency-free `src/lib/orderStatus.js` so the client form does not import the server-only Supabase client. `/order-success` gained a "Track this order" button. No migration. |
 | 2026-10-23 | P4-04 | Address book: `0010_addresses.sql` adds `public.addresses` with four `user_id = auth.uid()` RLS policies; `src/lib/addresses.js` holds the shared Zod rules, `ADDRESS_COLUMNS` and `addressKey()` duplicate detection; `createAddress`/`deleteAddress` write through the customer's own session client (RLS is the enforcement point, no service role); new `/account/addresses` page with `AddressBook`, and checkout now prefills the newest saved address, offers the rest as tap-to-fill buttons and shows a signed-in-only "save this address" checkbox whose write runs after the order is placed and never blocks it. Needs `0010_addresses.sql` run after `0009`. |
+| 2026-10-23 | P4-05 | Account wishlist: `0011_favorites.sql` adds `public.favorites` keyed `(user_id, product_id)` with select/insert/delete RLS and a cascade from `products`; `loadFavorites()` reads it and `pushFavorites(ids)` diffs and writes back only the added/removed ids; `parseFavoriteIds()` keeps only valid product UUIDs (cap 200); `favoritesStore` gained `setIds()`; a silent `FavoritesSync` in the `(shop)` layout merges the browser's list into the account on login and mirrors every later change, while `LogOutButton` clears the local list on sign-out. Guests keep the old localStorage behaviour. Needs `0011_favorites.sql` run after `0010`. |

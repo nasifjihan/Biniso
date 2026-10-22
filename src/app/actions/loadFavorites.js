@@ -6,7 +6,9 @@ import { FAVORITE_COLUMNS } from "@/lib/favorites";
 /** The signed-in customer's saved wishlist, newest first. */
 export async function loadFavorites() {
   const user = await getUser();
-  if (!user) return { ok: false, error: "Not signed in.", ids: [] };
+  // A guest has nothing stored against an account, so an empty list is the
+  // right answer here rather than an error.
+  if (!user) return { ok: true, ids: [], skipped: true };
 
   // The customer's own session, so RLS returns only their rows.
   const supabase = await createSupabaseServerClient();

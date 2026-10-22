@@ -10,7 +10,9 @@ import { parseFavoriteIds } from "@/lib/favorites";
  */
 export async function pushFavorites(ids) {
   const user = await getUser();
-  if (!user) return { ok: false, error: "Not signed in." };
+  // A guest keeps their wishlist in the browser, so there is nothing to save and
+  // nothing that went wrong.
+  if (!user) return { ok: true, skipped: true };
 
   const wanted = parseFavoriteIds(ids);
   const supabase = await createSupabaseServerClient();
