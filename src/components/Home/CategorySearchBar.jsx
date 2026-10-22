@@ -15,25 +15,25 @@ export default function CategorySearchBar() {
 
   useEffect(() => {
     async function loadCategories() {
-      const { data } = await supabase.from("products").select("category");
-      const list = Array.from(
-        new Set((data || []).map((d) => d.category).filter(Boolean))
-      ).sort();
-      setCategories(list);
+      const { data } = await supabase
+        .from("categories")
+        .select("id, name")
+        .order("name", { ascending: true });
+      setCategories(data || []);
     }
     loadCategories();
   }, []);
 
-  async function runSearch(nextQuery, nextCategory) {
-    if (!nextCategory && !nextQuery.trim()) {
+  async function runSearch(nextQuery, nextCategoryId) {
+    if (!nextCategoryId && !nextQuery.trim()) {
       setResults([]);
       return;
     }
 
     setLoading(true);
     let request = supabase.from("products").select("*");
-    request = nextCategory
-      ? request.eq("category", nextCategory)
+    request = nextCategoryId
+      ? request.eq("category_id", nextCategoryId)
       : request.ilike("name", `%${nextQuery.trim()}%`);
 
     const { data, error } = await request.limit(12);
@@ -47,10 +47,10 @@ export default function CategorySearchBar() {
   }
 
   function handleCategoryClick(cat) {
-    setQuery(cat);
-    setCategory(cat);
+    setQuery(cat.name);
+    setCategory(cat.id);
     setOpen(false);
-    runSearch(cat, cat);
+    runSearch(cat.name, cat.id);
   }
 
   const hasResults = useMemo(() => results.length > 0, [results]);
@@ -93,11 +93,11 @@ export default function CategorySearchBar() {
           <div className="grid md:grid-cols-5 gap-3">
             {categories.map((c) => (
               <button
-                key={c}
+                key={c.id}
                 onClick={() => handleCategoryClick(c)}
                 className="text-left border rounded-lg px-3 py-2 hover:bg-accent hover:text-accent-foreground"
               >
-                {c}
+                {c.name}
               </button>
             ))}
             {categories.length === 0 && (

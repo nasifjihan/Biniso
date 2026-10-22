@@ -35,8 +35,14 @@ export async function updateProduct(id, data) {
     ...(typeof data?.image === "string" ? { image: cleanUrl(data.image) } : null),
     ...(typeof data?.status === "string" ? { status: cleanText(data.status) } : null),
     ...(typeof data?.featured === "boolean" ? { featured: data.featured } : null),
-    ...(typeof data?.category === "string"
-      ? { category: cleanText(data.category) }
+    // An empty category id clears the product's category.
+    ...(data?.categoryId !== undefined
+      ? {
+          category_id:
+            typeof data.categoryId === "string" && data.categoryId.trim()
+              ? data.categoryId.trim()
+              : null,
+        }
       : null),
   };
 

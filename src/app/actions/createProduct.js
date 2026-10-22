@@ -6,7 +6,8 @@ import { createSupabaseServerClient, requireAdmin } from "@/lib/supabase/server"
 export async function createProduct(data) {
   await requireAdmin();
 
-  const { name, price, description, image, featured, status, category, stock } = data;
+  const { name, price, description, image, featured, status, categoryId, stock } =
+    data;
   const supabase = await createSupabaseServerClient();
 
   const cleanText = (v) => (typeof v === "string" ? v.trim() : v);
@@ -27,8 +28,8 @@ export async function createProduct(data) {
     featured: !!featured,
     status: cleanText(status) || "active",
     stock: cleanStock(stock),
-    ...(typeof category === "string" && category.trim()
-      ? { category: category.trim() }
+    ...(typeof categoryId === "string" && categoryId.trim()
+      ? { category_id: categoryId.trim() }
       : null),
   };
 

@@ -27,8 +27,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+// Radix Select cannot use an empty string as an item value.
+const NO_CATEGORY = "__none__";
+
 export default function AdminProducts() {
   const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -37,7 +41,7 @@ export default function AdminProducts() {
     name: "",
     price: "",
     description: "",
-    category: "",
+    categoryId: "",
     status: "active",
     featured: false,
     stock: "",
@@ -61,14 +65,23 @@ export default function AdminProducts() {
 
   useEffect(() => {
     fetchProducts();
+    fetchCategories();
   }, []);
+
+  async function fetchCategories() {
+    const { data } = await supabase
+      .from("categories")
+      .select("*")
+      .order("name", { ascending: true });
+    setCategories(data || []);
+  }
 
   async function fetchProducts() {
     setLoading(true);
     setError("");
     const { data, error: dbError } = await supabase
       .from("products")
-      .select("*, product_variants(*), product_images(*)")
+      .select("*, category:categories(name, slug), product_variants(*), product_images(*)")
       .order("created_at", { ascending: false });
     if (dbError) {
       setProducts([]);
@@ -103,7 +116,7 @@ export default function AdminProducts() {
         name: form.name,
         price: form.price,
         description: form.description,
-        category: form.category,
+        categoryId: form.categoryId,
         status: form.status,
         featured: form.featured,
         image: url,
@@ -117,7 +130,7 @@ export default function AdminProducts() {
         name: "",
         price: "",
         description: "",
-        category: "",
+        categoryId: "",
         status: "active",
         featured: false,
         stock: "",
@@ -187,15 +200,28 @@ export default function AdminProducts() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="category">Category</Label>
-                  <Input
-                    id="category"
-                    value={form.category}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, category: e.target.value }))
+                  <Label>Category</Label>
+                  <Select
+                    value={form.categoryId || NO_CATEGORY}
+                    onValueChange={(v) =>
+                      setForm((f) => ({
+                        ...f,
+                        categoryId: v === NO_CATEGORY ? "" : v,
+                      }))
                     }
-                    placeholder="e.g. Electronics"
-                  />
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={NO_CATEGORY}>No category</SelectItem>
+                      {categories.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="stock">Stock</Label>
@@ -279,7 +305,8 @@ export default function AdminProducts() {
               <div className="border rounded-2xl p-4 space-y-2">
                 <div className="font-semibold">{form.name || "Product name"}</div>
                 <div className="text-xs text-muted-foreground">
-                  {form.category || "Category"}
+                  {categories.find((c) => c.id === form.categoryId)?.name ||
+                    "Category"}
                 </div>
                 <div className="text-muted-foreground line-clamp-3">
                   {form.description || "Product description"}
@@ -334,7 +361,7 @@ export default function AdminProducts() {
                     </TableCell>
                     <TableCell className="font-medium">{p.name}</TableCell>
                     <TableCell className="text-muted-foreground">
-                      {p.category || "-"}
+                      {p.category?.name || "-"}
                     </TableCell>
                     <TableCell>৳ {p.price}</TableCell>
                     <TableCell className="text-muted-foreground">
@@ -369,6 +396,7 @@ export default function AdminProducts() {
           <ProductItem
             key={selectedProduct.id}
             product={selectedProduct}
+            categories={categories}
             refresh={fetchProducts}
             initialEditing
           />

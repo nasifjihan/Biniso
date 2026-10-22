@@ -115,10 +115,13 @@ customers.
   - **Files:** `supabase/migrations/0004_product_images.sql`, `src/app/actions/createProductImage.js`, `deleteProductImage.js`, `src/components/Admin/ImageGalleryEditor.jsx`, `ProductItem.jsx`, `src/lib/products.js`, `src/components/ProductDetail.jsx`
   - **Requires:** run `supabase/migrations/0004_product_images.sql` in the Supabase SQL Editor after `0003_variants.sql`.
 
-- [ ] **P2-04 · Categories as data** — priority: medium
+- [x] **P2-04 · Categories as data** — priority: medium
   - `category` is free text, so typos fragment the category list.
   - Add a `categories` table, reference it from products, and drive menu/search from it.
   - **Acceptance:** categories are managed in admin and reused everywhere.
+  - **Implementation:** `categories(id, name, slug)` with public read / admin write RLS. `products.category_id` replaces the free-text `category` column; the migration seeds one category per distinct existing value (slugified, collisions suffixed) and backfills `category_id` before dropping the column, so no product loses its category. New `/admin/categories` page (linked in the admin nav) adds, renames and deletes categories — deleting leaves products in place with `category_id = null` (the FK is `on delete set null`). Both admin product forms and the storefront category menu now read from the table, and storefront filtering uses `category_id`.
+  - **Files:** `supabase/migrations/0005_categories.sql`, `src/lib/categories.js`, `src/app/actions/createCategory.js`, `updateCategory.js`, `deleteCategory.js`, `src/app/(admin)/admin/categories/page.jsx`, `admin/layout.jsx`, `admin/products/page.jsx`, `src/components/Admin/ProductItem.jsx`, `src/components/Home/CategorySearchBar.jsx`, `src/app/actions/createProduct.js`, `updateProduct.js`, `src/lib/products.js`
+  - **Requires:** run `supabase/migrations/0005_categories.sql` in the Supabase SQL Editor after `0004_product_images.sql`.
 
 - [ ] **P2-05 · Pagination, filtering & sorting** — priority: medium
   - `/products` loads the entire table; search is capped at 12 results.
@@ -254,3 +257,4 @@ These block or shape the phases above — resolve before starting the related ph
 | 2026-10-22 | P2-01 | Inventory: nullable `products.stock` (NULL = not tracked) + `0002_stock.sql` with an atomic, service-role-only `decrement_stock()`; `createOrder` pre-checks availability then reserves stock and rolls the order back on shortage; admin gained a Stock field/column; storefront shows out-of-stock and disables add-to-cart. |
 | 2026-10-22 | P2-02 | Variants: `0003_variants.sql` adds `product_variants` (+ `order_items.variant_id`/`variant_label`) and makes `decrement_stock()` variant-aware; inline admin `VariantEditor`; `ProductDetail` gained per-attribute dropdowns with per-variant price/stock; cart lines keyed by `id::variantId`; `createOrder` prices, snapshots and reserves per variant. Needs `0003_variants.sql` run in Supabase. |
 | 2026-10-22 | P2-03 | Gallery: `0004_product_images.sql` adds `product_images` (position-ordered, unique per url) with `products`-style RLS; new `createProductImage`/`deleteProductImage` actions; admin `ImageGalleryEditor` for multi-file upload and removal; `ProductDetail` renders a main image with thumbnails, keeping `products.image` first so cards are unchanged. Needs `0004_product_images.sql` run in Supabase. |
+| 2026-10-22 | P2-04 | Categories as data: `0005_categories.sql` adds `categories` + `products.category_id`, seeds categories from the old free-text values, backfills, then drops `products.category`; new `/admin/categories` CRUD page; admin forms use a category select; storefront category menu and filtering move to `category_id`. Needs `0005_categories.sql` run in Supabase. |

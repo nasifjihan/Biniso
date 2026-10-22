@@ -20,7 +20,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-export default function ProductItem({ product, refresh, initialEditing = false }) {
+// Radix Select cannot use an empty string as an item value.
+const NO_CATEGORY = "__none__";
+
+export default function ProductItem({
+  product,
+  categories = [],
+  refresh,
+  initialEditing = false,
+}) {
   const [editing, setEditing] = useState(initialEditing);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -29,7 +37,7 @@ export default function ProductItem({ product, refresh, initialEditing = false }
     name: product.name || "",
     price: product.price ?? "",
     description: product.description || "",
-    category: product.category || "",
+    categoryId: product.category_id || "",
     featured: !!product.featured,
     status: product.status || "active",
     stock: product.stock ?? "",
@@ -44,7 +52,7 @@ export default function ProductItem({ product, refresh, initialEditing = false }
         name: form.name.trim(),
         price: Number(form.price),
         description: form.description.trim(),
-        category: form.category.trim(),
+        categoryId: form.categoryId,
         featured: form.featured,
         status: form.status,
         stock: form.stock,
@@ -143,13 +151,27 @@ export default function ProductItem({ product, refresh, initialEditing = false }
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
                 <Label>Category</Label>
-                <Input
-                  value={form.category}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, category: e.target.value }))
+                <Select
+                  value={form.categoryId || NO_CATEGORY}
+                  onValueChange={(v) =>
+                    setForm((f) => ({
+                      ...f,
+                      categoryId: v === NO_CATEGORY ? "" : v,
+                    }))
                   }
-                  placeholder="e.g. Electronics"
-                />
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={NO_CATEGORY}>No category</SelectItem>
+                    {categories.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label>Stock</Label>
@@ -206,7 +228,7 @@ export default function ProductItem({ product, refresh, initialEditing = false }
                     name: product.name || "",
                     price: product.price ?? "",
                     description: product.description || "",
-                    category: product.category || "",
+                    categoryId: product.category_id || "",
                     featured: !!product.featured,
                     status: product.status || "active",
                     stock: product.stock ?? "",
@@ -222,7 +244,9 @@ export default function ProductItem({ product, refresh, initialEditing = false }
           <div className="space-y-2">
             <div className="font-semibold line-clamp-1">{product.name}</div>
             {product.category && (
-              <div className="text-xs text-muted-foreground">{product.category}</div>
+              <div className="text-xs text-muted-foreground">
+                {product.category.name}
+              </div>
             )}
             <div className="text-muted-foreground text-sm line-clamp-2">
               {product.description}
