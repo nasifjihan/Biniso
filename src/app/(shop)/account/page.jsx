@@ -41,6 +41,9 @@ export default async function AccountPage() {
       </Card>
 
       <div className="flex flex-wrap gap-3">
+        <Button asChild>
+          <Link href="/account/orders">My orders</Link>
+        </Button>
         <Button variant="outline" asChild>
           <Link href="/products">Continue shopping</Link>
         </Button>

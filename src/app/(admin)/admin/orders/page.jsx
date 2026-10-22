@@ -1,4 +1,4 @@
-import { getAllOrders } from "@/lib/orders";
+import { getAllOrders, orderStatusVariant } from "@/lib/orders";
 import { Badge } from "@/components/ui/badge";
 import OrderStatusButtons from "@/components/OrderStatusButtons";
 import Link from "next/link";
@@ -25,17 +25,7 @@ export default async function AdminOrdersPage() {
                 </p>
               </div>
 
-              <Badge
-                variant={
-                  order.status === "pending"
-                    ? "secondary"
-                    : order.status === "cancelled"
-                      ? "destructive"
-                      : order.status === "confirmed"
-                      ? "default"
-                      : "outline"
-                }
-              >
+              <Badge variant={orderStatusVariant(order.status)}>
                 {order.status}
               </Badge>
             </div>

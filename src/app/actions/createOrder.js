@@ -2,6 +2,7 @@
 
 import { headers } from "next/headers";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { getUser } from "@/lib/supabase/server";
 import { sendOrderEmail, sendOrderConfirmation } from "@/lib/email";
 import { rateLimit } from "@/lib/rateLimit";
 import { parseCheckoutForm } from "@/lib/validation";
@@ -195,6 +196,11 @@ export async function createOrder(formData, cart) {
     const delivery_fee = Number(zone.fee);
     const total = subtotal - discount + delivery_fee;
 
+    // A signed-in customer gets the order linked to their account so it shows up
+    // under /account/orders; a guest order stays unlinked. The id comes from the
+    // session cookie, never from the form.
+    const user = await getUser();
+
     const { data: order, error: orderError } = await supabase
       .from("orders")
       .insert([
@@ -212,6 +218,7 @@ export async function createOrder(formData, cart) {
           delivery_fee,
           total,
           status: "pending",
+          user_id: user?.id ?? null,
         },
       ])
       .select()
