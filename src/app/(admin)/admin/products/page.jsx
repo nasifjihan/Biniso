@@ -68,7 +68,7 @@ export default function AdminProducts() {
     setError("");
     const { data, error: dbError } = await supabase
       .from("products")
-      .select("*")
+      .select("*, product_variants(*)")
       .order("created_at", { ascending: false });
     if (dbError) {
       setProducts([]);

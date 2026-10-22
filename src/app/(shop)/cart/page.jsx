@@ -1,6 +1,6 @@
 "use client";
 
-import { useCartStore } from "@/store/cartStore";
+import { lineKey, useCartStore } from "@/store/cartStore";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -38,7 +38,7 @@ export default function CartPage() {
         <div className="grid lg:grid-cols-[1fr_360px] gap-8">
           <div className="space-y-4">
             {cart.map((item) => (
-              <Card key={item.id} className="rounded-2xl">
+              <Card key={lineKey(item)} className="rounded-2xl">
                 <CardContent className="p-4 flex gap-4">
                   <Link
                     href={`/products/${item.id}`}
@@ -66,6 +66,11 @@ export default function CartPage() {
                         >
                           {item.name}
                         </Link>
+                        {item.variantLabel && (
+                          <div className="text-sm text-muted-foreground">
+                            {item.variantLabel}
+                          </div>
+                        )}
                         <div className="text-sm text-muted-foreground">
                           ৳ {item.price} each
                         </div>
@@ -80,7 +85,7 @@ export default function CartPage() {
                         <Button
                           variant="outline"
                           size="icon-sm"
-                          onClick={() => decreaseQty(item.id)}
+                          onClick={() => decreaseQty(lineKey(item))}
                         >
                           <Minus className="size-4" />
                         </Button>
@@ -88,7 +93,7 @@ export default function CartPage() {
                         <Button
                           variant="outline"
                           size="icon-sm"
-                          onClick={() => increaseQty(item.id)}
+                          onClick={() => increaseQty(lineKey(item))}
                         >
                           <Plus className="size-4" />
                         </Button>
@@ -97,7 +102,7 @@ export default function CartPage() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => removeFromCart(item.id)}
+                        onClick={() => removeFromCart(lineKey(item))}
                       >
                         <Trash2 className="size-4" />
                         Remove

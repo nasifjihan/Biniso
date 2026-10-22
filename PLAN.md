@@ -99,10 +99,13 @@ customers.
   - **Implementation:** `stock` is **nullable** — `NULL` means "not tracked" (always available), so the migration does not put existing products out of stock. Decrementing happens in `decrement_stock(items jsonb)`, which runs as one transaction and raises on shortage so a partial reservation is impossible; it is revoked from `PUBLIC` so only the service role (the checkout action) can call it. When stock runs out mid-checkout the action deletes the order and returns a message naming the product.
   - **Files:** `supabase/migrations/0002_stock.sql`, `src/app/actions/createOrder.js`, `src/app/actions/createProduct.js`, `updateProduct.js`, admin product form/table, `ProductCard`, `ProductDetail`
 
-- [ ] **P2-02 · Product variants (size / color / SKU)** — priority: medium
+- [x] **P2-02 · Product variants (size / color / SKU)** — priority: medium
   - Only one flat price and image per product.
   - Add a `product_variants` table (sku, attributes, price delta, stock) and variant selection on the detail page.
   - **Acceptance:** a product can have multiple selectable variants priced independently.
+  - **Implementation:** `product_variants(product_id, attributes jsonb, sku, price, stock)` with RLS mirroring `products` (public read when the parent product is active, admin write). A `NULL` variant price falls back to `products.price`; a product that has variants tracks stock per variant and ignores `products.stock`. Attributes are entered as `Color=Red, Size=M` and rendered as a "Red / M" label. The admin edits variants inline from each product card; the storefront renders one dropdown per attribute and preselects the first in-stock combination. Cart lines are keyed by `id::variantId` so two variants of one product stay separate, `order_items` stores `variant_id` + `variant_label` snapshots, and `decrement_stock(items jsonb)` now decrements a variant when the line carries a `variant_id`.
+  - **Files:** `supabase/migrations/0003_variants.sql`, `src/lib/variants.js`, `src/app/actions/createVariant.js`, `updateVariant.js`, `deleteVariant.js`, `src/components/Admin/VariantEditor.jsx`, `ProductItem.jsx`, `src/components/ProductDetail.jsx`, `src/store/cartStore.js`, `src/app/(shop)/cart/page.jsx`, `src/app/actions/createOrder.js`, `src/lib/email.js`
+  - **Requires:** run `supabase/migrations/0003_variants.sql` in the Supabase SQL Editor after `0002_stock.sql`.
 
 - [ ] **P2-03 · Multiple images / gallery** — priority: medium
   - `products.image` is a single URL.
@@ -230,7 +233,7 @@ These block or shape the phases above — resolve before starting the related ph
 | D2 | Are customer accounts in scope, or stay guest-only? | P4-* | **Resolved:** accounts are in scope. Guest checkout stays available. |
 | D3 | Is VAT/tax required for your market? | P3-06 | Skip if not applicable. |
 | D4 | Production host (Vercel / other) and domain | P1-01, P6-06 | Needed for canonical URLs, sitemap and env config. |
-| D5 | Do you need product variants, or is one price per product enough? | P2-02 | **Resolved:** variants are required, so P2-02 will add `product_variants` (sku, attributes, price delta, stock). Product-level `stock` stays as the fallback for products without variants. |
+| D5 | Do you need product variants, or is one price per product enough? | P2-02 | **Resolved & done (P2-02):** `product_variants` (sku, attributes, price, stock) is in place. Product-level `stock` stays as the fallback for products without variants. |
 
 ## Progress Log
 
@@ -246,3 +249,4 @@ These block or shape the phases above — resolve before starting the related ph
 | 2026-10-22 | P1-07 | Migrated 7 `<img>` usages to `next/image` (cards, detail, hero, promo, cart, admin) with `sizes` and empty-image fallbacks; the blob preview stays a plain `<img>`. `coresg-normal.trae.ai` allow-listed. |
 | 2026-10-22 | P1-08 | Added `zod` and `src/lib/validation.js` (BD phone, email, length limits) shared by the checkout form (inline field errors) and `createOrder` (server-side rejection). |
 | 2026-10-22 | P2-01 | Inventory: nullable `products.stock` (NULL = not tracked) + `0002_stock.sql` with an atomic, service-role-only `decrement_stock()`; `createOrder` pre-checks availability then reserves stock and rolls the order back on shortage; admin gained a Stock field/column; storefront shows out-of-stock and disables add-to-cart. |
+| 2026-10-22 | P2-02 | Variants: `0003_variants.sql` adds `product_variants` (+ `order_items.variant_id`/`variant_label`) and makes `decrement_stock()` variant-aware; inline admin `VariantEditor`; `ProductDetail` gained per-attribute dropdowns with per-variant price/stock; cart lines keyed by `id::variantId`; `createOrder` prices, snapshots and reserves per variant. Needs `0003_variants.sql` run in Supabase. |

@@ -4,24 +4,61 @@ import { useMemo, useState } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Heart, Minus, Plus, ShoppingCart } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useCartStore } from "@/store/cartStore";
 import { useFavoritesStore } from "@/store/favoritesStore";
 import { toast } from "sonner";
+import {
+  attributeKeys,
+  attributeValues,
+  findVariant,
+  isInStock,
+  variantLabel,
+} from "@/lib/variants";
 
 export default function ProductDetail({ product }) {
   const addToCart = useCartStore((s) => s.addToCart);
   const isFavorite = useFavoritesStore((s) => s.isFavorite);
   const toggleFavorite = useFavoritesStore((s) => s.toggleFavorite);
 
+  const variants = useMemo(() => product.product_variants || [], [product]);
+  const optionKeys = useMemo(() => attributeKeys(variants), [variants]);
+
+  // Preselect the first buyable combination so the page is usable immediately.
+  const defaultSelection = useMemo(() => {
+    if (variants.length === 0) return {};
+    const first = variants.find((v) => isInStock(v.stock)) || variants[0];
+    return first.attributes || {};
+  }, [variants]);
+
+  const [selection, setSelection] = useState(defaultSelection);
   const [qty, setQty] = useState(1);
 
   const favored = useMemo(() => isFavorite(product.id), [isFavorite, product.id]);
 
-  // `stock === null` means the product is not stock-tracked.
-  const tracked = product.stock !== null && product.stock !== undefined;
-  const inStock = !tracked || product.stock > 0;
-  const maxQty = tracked ? Math.max(1, product.stock) : undefined;
+  const selectedVariant =
+    variants.length > 0 ? findVariant(variants, selection) : null;
+  const needsSelection = variants.length > 0 && !selectedVariant;
+
+  const unitPrice =
+    selectedVariant?.price != null
+      ? Number(selectedVariant.price)
+      : Number(product.price);
+
+  // A product with variants tracks stock per variant and ignores products.stock.
+  const stock = variants.length > 0 ? selectedVariant?.stock : product.stock;
+  const tracked = stock !== null && stock !== undefined;
+  const inStock = !tracked || stock > 0;
+  const maxQty = tracked ? Math.max(1, stock) : undefined;
+  const canAdd = inStock && !needsSelection;
 
   return (
     <div className="container mx-auto py-16 grid md:grid-cols-2 gap-10">
@@ -58,17 +95,57 @@ export default function ProductDetail({ product }) {
 
         <p className="text-muted-foreground">{product.description}</p>
 
-        <div className="text-3xl font-bold text-primary">৳ {product.price}</div>
+        <div className="text-3xl font-bold text-primary">৳ {unitPrice}</div>
 
-        {tracked && (
-          <div
-            className={
-              inStock
-                ? "text-sm text-muted-foreground"
-                : "text-sm font-medium text-destructive"
-            }
-          >
-            {inStock ? `${product.stock} in stock` : "Out of stock"}
+        {optionKeys.length > 0 && (
+          <div className="space-y-3">
+            {optionKeys.map((key) => (
+              <div key={key} className="space-y-2">
+                <Label htmlFor={`option-${key}`}>{key}</Label>
+                <Select
+                  value={selection[key] ?? ""}
+                  onValueChange={(value) => {
+                    setSelection((s) => ({ ...s, [key]: value }));
+                    setQty(1);
+                  }}
+                >
+                  <SelectTrigger id={`option-${key}`} className="w-full">
+                    <SelectValue placeholder={`Choose ${key}`} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {attributeValues(variants, key).map((value) => (
+                      <SelectItem key={value} value={value}>
+                        {value}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {needsSelection ? (
+          <div className="text-sm font-medium text-destructive">
+            This combination is unavailable. Try another option.
+          </div>
+        ) : (
+          tracked && (
+            <div
+              className={
+                inStock
+                  ? "text-sm text-muted-foreground"
+                  : "text-sm font-medium text-destructive"
+              }
+            >
+              {inStock ? `${stock} in stock` : "Out of stock"}
+            </div>
+          )
+        )}
+
+        {selectedVariant && variants.length > 0 && (
+          <div className="text-sm text-muted-foreground">
+            Selected: {variantLabel(selectedVariant)}
           </div>
         )}
 
@@ -98,7 +175,7 @@ export default function ProductDetail({ product }) {
           <Button
             variant="outline"
             size="icon"
-            disabled={tracked && qty >= product.stock}
+            disabled={tracked && qty >= stock}
             onClick={() => setQty((q) => Math.min(q + 1, maxQty ?? q + 1))}
           >
             <Plus className="size-4" />
@@ -107,15 +184,31 @@ export default function ProductDetail({ product }) {
 
         <Button
           size="lg"
-          disabled={!inStock}
+          disabled={!canAdd}
           onClick={() => {
-            addToCart(product, qty);
+            addToCart(
+              {
+                id: product.id,
+                name: product.name,
+                price: unitPrice,
+                image: product.image,
+                variantId: selectedVariant?.id ?? null,
+                variantLabel: selectedVariant
+                  ? variantLabel(selectedVariant)
+                  : null,
+              },
+              qty,
+            );
             toast.success("Added to cart");
           }}
           className="w-full"
         >
           <ShoppingCart className="size-4" />
-          {inStock ? "Add to cart" : "Out of stock"}
+          {!inStock
+            ? "Out of stock"
+            : needsSelection
+              ? "Choose options"
+              : "Add to cart"}
         </Button>
       </div>
     </div>

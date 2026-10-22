@@ -5,6 +5,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { sendOrderEmail, sendOrderConfirmation } from "@/lib/email";
 import { rateLimit } from "@/lib/rateLimit";
 import { parseCheckoutForm } from "@/lib/validation";
+import { variantLabel } from "@/lib/variants";
 
 const DELIVERY_FEES = {
   inside_dhaka: 60,
@@ -79,6 +80,27 @@ export async function createOrder(formData, cart) {
       ]),
     );
 
+    // Variant lines are priced and reserved from the variant, not the product.
+    const variantIds = cart
+      .map((item) => item.variantId)
+      .filter((id) => typeof id === "string" && id);
+
+    const variantsById = new Map();
+    if (variantIds.length > 0) {
+      const { data: variants, error: variantsError } = await supabase
+        .from("product_variants")
+        .select("id, product_id, attributes, sku, price, stock")
+        .in("id", variantIds);
+
+      if (variantsError) {
+        return { ok: false, error: variantsError.message };
+      }
+
+      for (const variant of variants || []) {
+        variantsById.set(variant.id, variant);
+      }
+    }
+
     const items = [];
     for (const item of cart) {
       const product = productsById.get(item.id);
@@ -89,23 +111,42 @@ export async function createOrder(formData, cart) {
         };
       }
 
+      const variant = item.variantId
+        ? variantsById.get(item.variantId)
+        : undefined;
+
+      if (item.variantId && (!variant || variant.product_id !== item.id)) {
+        return {
+          ok: false,
+          error: `The selected option for ${product.name} is no longer available.`,
+        };
+      }
+
+      const price =
+        variant?.price != null ? Number(variant.price) : product.price;
+      // `stock === null` means the line is not stock-tracked.
+      const stock = variant ? variant.stock : product.stock;
+      const label = variant ? variantLabel(variant) : null;
+
       const quantity = Math.max(1, Number(item.quantity) || 1);
-      // `stock === null` means the product is not stock-tracked.
-      if (product.stock !== null && quantity > product.stock) {
+      if (stock !== null && quantity > stock) {
+        const what = label ? `${product.name} (${label})` : product.name;
         return {
           ok: false,
           error:
-            product.stock <= 0
-              ? `${product.name} is out of stock.`
-              : `Only ${product.stock} left of ${product.name}.`,
+            stock <= 0
+              ? `${what} is out of stock.`
+              : `Only ${stock} left of ${what}.`,
         };
       }
 
       items.push({
         product_id: item.id,
+        variant_id: variant?.id ?? null,
+        variant_label: label,
         name: product.name,
         quantity,
-        price: product.price,
+        price,
       });
     }
 
@@ -138,9 +179,11 @@ export async function createOrder(formData, cart) {
     }
 
     const { error: itemsError } = await supabase.from("order_items").insert(
-      items.map(({ product_id, quantity, price }) => ({
+      items.map(({ product_id, variant_id, variant_label, quantity, price }) => ({
         order_id: order.id,
         product_id,
+        variant_id,
+        variant_label,
         quantity,
         price,
       })),
@@ -155,7 +198,11 @@ export async function createOrder(formData, cart) {
     // Reserve stock atomically. The SQL function rolls back all of its updates
     // when any line item is short, so a failed reservation changes nothing.
     const { error: stockError } = await supabase.rpc("decrement_stock", {
-      items: items.map(({ product_id, quantity }) => ({ product_id, quantity })),
+      items: items.map(({ product_id, variant_id, quantity }) => ({
+        product_id,
+        variant_id,
+        quantity,
+      })),
     });
 
     if (stockError) {
@@ -165,8 +212,17 @@ export async function createOrder(formData, cart) {
       const shortId = /insufficient_stock:([0-9a-fA-F-]{36})/.exec(
         stockError.message || "",
       )?.[1];
-      const shortName = shortId
-        ? items.find((i) => i.product_id === shortId)?.name
+      // The SQL function reports the id that ran short: a variant when the line
+      // was variant-priced, otherwise the product itself.
+      const shortItem = shortId
+        ? items.find(
+            (i) => i.product_id === shortId || i.variant_id === shortId,
+          )
+        : null;
+      const shortName = shortItem
+        ? shortItem.variant_label
+          ? `${shortItem.name} (${shortItem.variant_label})`
+          : shortItem.name
         : null;
 
       return {

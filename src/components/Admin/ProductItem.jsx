@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import VariantEditor from "@/components/Admin/VariantEditor";
 import {
   Select,
   SelectContent,
@@ -175,6 +176,11 @@ export default function ProductItem({ product, refresh, initialEditing = false }
                 onCheckedChange={(v) => setForm((f) => ({ ...f, featured: v }))}
               />
             </div>
+            <VariantEditor
+              productId={product.id}
+              variants={product.product_variants || []}
+              refresh={refresh}
+            />
             {error && (
               <div className="text-sm text-destructive border border-destructive/30 bg-destructive/10 rounded-lg px-3 py-2">
                 {error}

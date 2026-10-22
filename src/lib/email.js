@@ -11,7 +11,11 @@ function formatItems(items) {
     .map(
       (item) => `
         <tr>
-          <td style="padding:4px 8px;border:1px solid #ddd">${item.name}</td>
+          <td style="padding:4px 8px;border:1px solid #ddd">${item.name}${
+            item.variant_label
+              ? `<br><span style="color:#666;font-size:12px">${item.variant_label}</span>`
+              : ""
+          }</td>
           <td style="padding:4px 8px;border:1px solid #ddd;text-align:center">${item.quantity}</td>
           <td style="padding:4px 8px;border:1px solid #ddd;text-align:right">৳ ${item.price}</td>
           <td style="padding:4px 8px;border:1px solid #ddd;text-align:right">৳ ${item.price * item.quantity}</td>

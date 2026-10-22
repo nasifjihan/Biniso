@@ -1,6 +1,12 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
+/**
+ * A cart line is identified by the product plus its variant, so two variants of
+ * the same product stay separate rows instead of merging quantities.
+ */
+export const lineKey = (item) => `${item?.id ?? ""}::${item?.variantId ?? ""}`;
+
 export const useCartStore = create(
   persist(
     (set) => ({
@@ -9,12 +15,13 @@ export const useCartStore = create(
       addToCart: (product, qty = 1) =>
         set((state) => {
           const safeQty = Math.max(1, Number(qty) || 1);
-          const existing = state.cart.find((item) => item.id === product.id);
+          const key = lineKey(product);
+          const existing = state.cart.find((item) => lineKey(item) === key);
 
           if (existing) {
             return {
               cart: state.cart.map((item) =>
-                item.id === product.id
+                lineKey(item) === key
                   ? { ...item, quantity: item.quantity + safeQty }
                   : item,
               ),
@@ -26,23 +33,25 @@ export const useCartStore = create(
           };
         }),
 
-      removeFromCart: (id) =>
+      removeFromCart: (key) =>
         set((state) => ({
-          cart: state.cart.filter((item) => item.id !== id),
+          cart: state.cart.filter((item) => lineKey(item) !== key),
         })),
 
-      increaseQty: (id) =>
+      increaseQty: (key) =>
         set((state) => ({
           cart: state.cart.map((item) =>
-            item.id === id ? { ...item, quantity: item.quantity + 1 } : item,
+            lineKey(item) === key ? { ...item, quantity: item.quantity + 1 } : item,
           ),
         })),
 
-      decreaseQty: (id) =>
+      decreaseQty: (key) =>
         set((state) => ({
           cart: state.cart
             .map((item) =>
-              item.id === id ? { ...item, quantity: item.quantity - 1 } : item,
+              lineKey(item) === key
+                ? { ...item, quantity: item.quantity - 1 }
+                : item,
             )
             .filter((item) => item.quantity > 0),
         })),
