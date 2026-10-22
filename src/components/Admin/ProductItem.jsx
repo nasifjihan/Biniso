@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { updateProduct } from "@/app/actions/updateProduct";
 import { deleteProduct } from "@/app/actions/deleteProduct";
 import { Button } from "@/components/ui/button";
@@ -78,11 +79,18 @@ export default function ProductItem({ product, refresh, initialEditing = false }
   return (
     <Card className="rounded-2xl">
       <CardContent className="p-4 space-y-4">
-        <img
-          src={form.image || product.image}
-          alt={product.name}
-          className="h-40 w-full object-cover rounded-xl border"
-        />
+        {form.image || product.image ? (
+          <Image
+            src={form.image || product.image}
+            alt={product.name}
+            width={400}
+            height={400}
+            sizes="(max-width: 768px) 100vw, 33vw"
+            className="h-40 w-full object-cover rounded-xl border"
+          />
+        ) : (
+          <div className="h-40 w-full rounded-xl border bg-muted" />
+        )}
 
         {editing ? (
           <div className="space-y-3">

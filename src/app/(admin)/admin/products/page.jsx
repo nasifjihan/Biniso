@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
+import Image from "next/image";
 import { supabase } from "@/lib/supabaseClient";
 import { createProduct } from "@/app/actions/createProduct";
 import { Button } from "@/components/ui/button";
@@ -245,6 +246,7 @@ export default function AdminProducts() {
               <div className="border rounded-2xl bg-muted/30 p-4">
                 <div className="text-sm font-medium mb-3">Preview</div>
                 {imagePreview ? (
+                  // blob: object URLs from the local file picker cannot be optimised by next/image
                   <img
                     src={imagePreview}
                     alt="Preview"
@@ -299,11 +301,17 @@ export default function AdminProducts() {
                 {products.map((p) => (
                   <TableRow key={p.id}>
                     <TableCell>
-                      <img
-                        src={p.image}
-                        alt={p.name}
-                        className="h-10 w-14 rounded-md object-cover border"
-                      />
+                      {p.image ? (
+                        <Image
+                          src={p.image}
+                          alt={p.name}
+                          width={56}
+                          height={40}
+                          className="h-10 w-14 rounded-md object-cover border"
+                        />
+                      ) : (
+                        <div className="h-10 w-14 rounded-md border bg-muted" />
+                      )}
                     </TableCell>
                     <TableCell className="font-medium">{p.name}</TableCell>
                     <TableCell className="text-muted-foreground">

@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidateTag } from "next/cache";
 import { createSupabaseServerClient, requireAdmin } from "@/lib/supabase/server";
 
 export async function createProduct(data) {
@@ -33,6 +34,8 @@ export async function createProduct(data) {
   if (error) {
     return { ok: false, error: error.message };
   }
+
+  revalidateTag("products");
 
   return { ok: true, data: created };
 }

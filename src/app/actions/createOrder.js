@@ -1,7 +1,10 @@
 "use server";
 
+import { headers } from "next/headers";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { sendOrderEmail } from "@/lib/email";
+import { sendOrderEmail, sendOrderConfirmation } from "@/lib/email";
+import { rateLimit } from "@/lib/rateLimit";
+import { parseCheckoutForm } from "@/lib/validation";
 
 const DELIVERY_FEES = {
   inside_dhaka: 60,
@@ -11,25 +14,47 @@ const DELIVERY_FEES = {
 
 export async function createOrder(formData, cart) {
   try {
+    // Honeypot: real users never fill this hidden field.
+    if (String(formData.get("company") || "").trim()) {
+      return { ok: false, error: "Invalid submission" };
+    }
+
     if (!Array.isArray(cart) || cart.length === 0) {
       return { ok: false, error: "Cart is empty" };
     }
 
-    const customer_name = String(formData.get("name") || "").trim();
-    const phone = String(formData.get("phone") || "").trim();
-    const address = String(formData.get("address") || "").trim();
-    const email = String(formData.get("email") || "").trim() || null;
-    const city = String(formData.get("city") || "").trim() || null;
-    const notes = String(formData.get("notes") || "").trim() || null;
+    const requestHeaders = await headers();
+    const ip =
+      (requestHeaders.get("x-forwarded-for") || "").split(",")[0].trim() ||
+      requestHeaders.get("x-real-ip") ||
+      "unknown";
 
-    const requestedMethod = formData.get("delivery_method");
-    const delivery_method = Object.hasOwn(DELIVERY_FEES, requestedMethod)
-      ? requestedMethod
-      : "inside_dhaka";
-
-    if (!customer_name || !phone || !address) {
-      return { ok: false, error: "Name, phone and address are required" };
+    const limited = rateLimit(`checkout:${ip}`);
+    if (!limited.ok) {
+      return {
+        ok: false,
+        error: "Too many attempts. Please try again in a minute.",
+      };
     }
+
+    const parsed = parseCheckoutForm(formData);
+    if (!parsed.success) {
+      return {
+        ok: false,
+        error: parsed.error,
+        fieldErrors: parsed.fieldErrors,
+      };
+    }
+
+    const {
+      name: customer_name,
+      phone,
+      address,
+      email,
+      city,
+      notes,
+      delivery_method,
+    } = parsed.data;
 
     // Guest checkout runs with the service role key so it bypasses RLS.
     const supabase = createSupabaseAdminClient();
@@ -122,6 +147,7 @@ export async function createOrder(formData, cart) {
 
     try {
       await sendOrderEmail({ ...order, items });
+      await sendOrderConfirmation({ ...order, items });
     } catch (e) {
       return { ...result, emailWarning: e?.message || "Email failed" };
     }

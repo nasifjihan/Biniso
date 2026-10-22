@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -11,7 +12,7 @@ export default function PromoCard({ title, subtitle, image }) {
           <p className="text-muted-foreground">{subtitle}</p>
           <Button size="sm" variant="outline">Explore Now</Button>
         </div>
-        <img src={image} alt={title} className="h-24 w-24 object-contain" />
+        <Image src={image} alt={title} width={96} height={96} className="h-24 w-24 object-contain" />
       </CardContent>
     </Card>
   );

@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useCartStore } from "@/store/cartStore";
 import { createOrder } from "../../actions/createOrder";
+import { parseCheckoutForm } from "@/lib/validation";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,6 +26,7 @@ export default function CheckoutPage() {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
   const [deliveryMethod, setDeliveryMethod] = useState("inside_dhaka");
+  const [fieldErrors, setFieldErrors] = useState({});
 
   const deliveryFee = useMemo(() => {
     if (deliveryMethod === "outside_dhaka") return 120;
@@ -38,10 +40,19 @@ export default function CheckoutPage() {
     const formData = new FormData(e.target);
     formData.set("delivery_method", deliveryMethod);
 
+    const parsed = parseCheckoutForm(formData);
+    if (!parsed.success) {
+      setFieldErrors(parsed.fieldErrors);
+      toast.error(parsed.error);
+      return;
+    }
+    setFieldErrors({});
+
     setSubmitting(true);
     const res = await createOrder(formData, cart);
 
     if (!res?.ok) {
+      setFieldErrors(res?.fieldErrors || {});
       toast.error(res?.error || "Failed to place order");
       setSubmitting(false);
       return;
@@ -98,10 +109,21 @@ export default function CheckoutPage() {
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-5">
+                <input
+                  type="text"
+                  name="company"
+                  tabIndex={-1}
+                  autoComplete="off"
+                  aria-hidden="true"
+                  className="hidden"
+                />
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="name">Full name</Label>
                     <Input id="name" name="name" required placeholder="Your name" />
+                    {fieldErrors.name && (
+                      <p className="text-sm text-destructive">{fieldErrors.name}</p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="phone">Phone</Label>
@@ -111,6 +133,9 @@ export default function CheckoutPage() {
                       required
                       placeholder="01XXXXXXXXX"
                     />
+                    {fieldErrors.phone && (
+                      <p className="text-sm text-destructive">{fieldErrors.phone}</p>
+                    )}
                   </div>
                 </div>
 
@@ -118,10 +143,16 @@ export default function CheckoutPage() {
                   <div className="space-y-2">
                     <Label htmlFor="email">Email (optional)</Label>
                     <Input id="email" name="email" type="email" placeholder="you@email.com" />
+                    {fieldErrors.email && (
+                      <p className="text-sm text-destructive">{fieldErrors.email}</p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="city">City (optional)</Label>
                     <Input id="city" name="city" placeholder="e.g. Dhaka" />
+                    {fieldErrors.city && (
+                      <p className="text-sm text-destructive">{fieldErrors.city}</p>
+                    )}
                   </div>
                 </div>
 
@@ -134,6 +165,9 @@ export default function CheckoutPage() {
                     placeholder="House, road, area"
                     className="min-h-24"
                   />
+                  {fieldErrors.address && (
+                    <p className="text-sm text-destructive">{fieldErrors.address}</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -153,6 +187,9 @@ export default function CheckoutPage() {
                 <div className="space-y-2">
                   <Label htmlFor="notes">Notes (optional)</Label>
                   <Textarea id="notes" name="notes" placeholder="Any instruction" />
+                  {fieldErrors.notes && (
+                    <p className="text-sm text-destructive">{fieldErrors.notes}</p>
+                  )}
                 </div>
 
                 <Button

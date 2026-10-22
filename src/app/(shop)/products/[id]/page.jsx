@@ -1,123 +1,56 @@
-"use client";
-
-import { useEffect, useMemo, useState } from "react";
+import { cache } from "react";
+import { notFound } from "next/navigation";
+import ProductDetail from "@/components/ProductDetail";
 import { getProductById } from "@/lib/products";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Heart, Minus, Plus, ShoppingCart } from "lucide-react";
-import { useCartStore } from "@/store/cartStore";
-import { useFavoritesStore } from "@/store/favoritesStore";
-import { toast } from "sonner";
 
-export default function ProductDetails({ params }) {
-  const addToCart = useCartStore((s) => s.addToCart);
-  const isFavorite = useFavoritesStore((s) => s.isFavorite);
-  const toggleFavorite = useFavoritesStore((s) => s.toggleFavorite);
+const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [product, setProduct] = useState(null);
-  const [qty, setQty] = useState(1);
+// cache() dedupes the query between generateMetadata and the page render.
+const loadProduct = cache(async (id) => {
+  try {
+    return await getProductById(id);
+  } catch {
+    return null;
+  }
+});
 
-  useEffect(() => {
-    let active = true;
-    setLoading(true);
-    setError("");
-    setProduct(null);
+export async function generateMetadata({ params }) {
+  const { id } = await params;
+  const product = await loadProduct(id);
 
-    getProductById(params.id)
-      .then((p) => {
-        if (!active) return;
-        setProduct(p);
-        setLoading(false);
-      })
-      .catch((e) => {
-        if (!active) return;
-        setError(e?.message || "Failed to load product");
-        setLoading(false);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [params.id]);
-
-  const favored = useMemo(() => (product ? isFavorite(product.id) : false), [isFavorite, product]);
-
-  if (loading) {
-    return (
-      <div className="container mx-auto py-16">
-        <div className="text-sm text-muted-foreground">Loading...</div>
-      </div>
-    );
+  if (!product) {
+    return { title: "Product not found | Biniso" };
   }
 
-  if (error || !product) {
-    return (
-      <div className="container mx-auto py-16">
-        <div className="text-sm text-destructive">{error || "Product not found"}</div>
-      </div>
-    );
-  }
+  const description =
+    product.description?.trim() || `Buy ${product.name} online at Biniso.`;
+  const images = product.image ? [product.image] : undefined;
 
-  return (
-    <div className="container mx-auto py-16 grid md:grid-cols-2 gap-10">
-      <div className="border rounded-2xl overflow-hidden bg-card">
-        <img src={product.image} alt={product.name} className="w-full h-[420px] object-cover" />
-      </div>
+  return {
+    title: `${product.name} | Biniso`,
+    description,
+    alternates: { canonical: `${baseUrl}/products/${id}` },
+    openGraph: {
+      title: product.name,
+      description,
+      url: `${baseUrl}/products/${id}`,
+      type: "website",
+      images,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: product.name,
+      description,
+      images,
+    },
+  };
+}
 
-      <div className="space-y-5">
-        <div className="flex items-start justify-between gap-4">
-          <h1 className="text-3xl font-bold leading-tight">{product.name}</h1>
-          <Button
-            size="icon"
-            variant="outline"
-            className="rounded-full"
-            onClick={() => {
-              toggleFavorite(product.id);
-              toast.success(favored ? "Removed from favorites" : "Added to favorites");
-            }}
-          >
-            <Heart className={favored ? "size-4 text-rose-600 fill-rose-600" : "size-4"} />
-          </Button>
-        </div>
+export default async function ProductPage({ params }) {
+  const { id } = await params;
+  const product = await loadProduct(id);
 
-        <p className="text-muted-foreground">{product.description}</p>
+  if (!product) notFound();
 
-        <div className="text-3xl font-bold text-primary">৳ {product.price}</div>
-
-        <div className="flex items-center gap-3">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => setQty((q) => Math.max(1, q - 1))}
-          >
-            <Minus className="size-4" />
-          </Button>
-          <Input
-            value={qty}
-            onChange={(e) => setQty(Math.max(1, Number(e.target.value) || 1))}
-            type="number"
-            min={1}
-            className="w-24 text-center"
-          />
-          <Button variant="outline" size="icon" onClick={() => setQty((q) => q + 1)}>
-            <Plus className="size-4" />
-          </Button>
-        </div>
-
-        <Button
-          size="lg"
-          onClick={() => {
-            addToCart(product, qty);
-            toast.success("Added to cart");
-          }}
-          className="w-full"
-        >
-          <ShoppingCart className="size-4" />
-          Add to cart
-        </Button>
-      </div>
-    </div>
-  );
+  return <ProductDetail product={product} />;
 }

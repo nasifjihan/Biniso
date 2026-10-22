@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 
 const slides = [
@@ -51,7 +52,14 @@ export default function HeroCarousel() {
         </div>
       </div>
       <div className="flex justify-center">
-        <img src={s.image} alt={s.title} className="max-h-64" />
+        <Image
+          src={s.image}
+          alt={s.title}
+          width={640}
+          height={480}
+          sizes="(max-width: 768px) 100vw, 50vw"
+          className="max-h-64 w-auto object-contain"
+        />
       </div>
     </div>
   );

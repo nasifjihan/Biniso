@@ -2,6 +2,8 @@ import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+const fromAddress = () => process.env.ORDER_FROM_EMAIL || "onboarding@resend.dev";
+
 function formatItems(items) {
   if (!Array.isArray(items) || items.length === 0) return "";
 
@@ -31,38 +33,56 @@ function formatItems(items) {
     </table>`;
 }
 
+function buildOrderHtml(order, heading) {
+  return `
+    <h2>${heading}</h2>
+    <p>Order ID: ${order.id}</p>
+    <p>Name: ${order.customer_name}</p>
+    <p>Phone: ${order.phone}</p>
+    ${order.email ? `<p>Email: ${order.email}</p>` : ""}
+    <p>Address: ${order.address}</p>
+    ${order.city ? `<p>City: ${order.city}</p>` : ""}
+    ${
+      order.delivery_method
+        ? `<p>Delivery: ${String(order.delivery_method).replaceAll("_", " ")} (৳ ${order.delivery_fee || 0})</p>`
+        : ""
+    }
+    ${order.notes ? `<p>Notes: ${order.notes}</p>` : ""}
+    ${formatItems(order.items)}
+    ${order.subtotal ? `<p>Subtotal: ৳ ${order.subtotal}</p>` : ""}
+    <p><strong>Total: ৳ ${order.total}</strong></p>
+  `;
+}
+
+// Notification to the store owner.
 export async function sendOrderEmail(order) {
   const to = process.env.ORDER_RECEIVER_EMAIL || order?.email;
   if (!to || !process.env.RESEND_API_KEY) return;
 
-  const from = process.env.ORDER_FROM_EMAIL || "onboarding@resend.dev";
-
   try {
     await resend.emails.send({
-      from,
+      from: fromAddress(),
       to,
       subject: "New Order Received",
-      html: `
-        <h2>New Order</h2>
-        <p>Name: ${order.customer_name}</p>
-        <p>Phone: ${order.phone}</p>
-        ${order.email ? `<p>Email: ${order.email}</p>` : ""}
-        <p>Address: ${order.address}</p>
-        ${order.city ? `<p>City: ${order.city}</p>` : ""}
-        ${
-          order.delivery_method
-            ? `<p>Delivery: ${order.delivery_method} (৳ ${
-                order.delivery_fee || 0
-              })</p>`
-            : ""
-        }
-        ${order.notes ? `<p>Notes: ${order.notes}</p>` : ""}
-        ${formatItems(order.items)}
-        ${order.subtotal ? `<p>Subtotal: ৳ ${order.subtotal}</p>` : ""}
-        <p><strong>Total: ৳ ${order.total}</strong></p>
-      `,
+      html: buildOrderHtml(order, "New Order"),
     });
   } catch (e) {
     throw new Error(e?.message || "Failed to send email");
+  }
+}
+
+// Receipt for the customer.
+export async function sendOrderConfirmation(order) {
+  if (!order?.email || !process.env.RESEND_API_KEY) return;
+
+  try {
+    await resend.emails.send({
+      from: fromAddress(),
+      to: order.email,
+      subject: `Order confirmed — ${order.id}`,
+      html: buildOrderHtml(order, "Thanks for your order!"),
+    });
+  } catch (e) {
+    throw new Error(e?.message || "Failed to send confirmation email");
   }
 }

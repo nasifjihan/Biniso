@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,11 +20,18 @@ export default function ProductCard({ product }) {
     <Card className="group overflow-hidden rounded-2xl border bg-card shadow-sm transition-shadow hover:shadow-md">
       <div className="relative">
         <Link href={`/products/${product.id}`} className="block">
-          <img
-            src={product.image}
-            alt={product.name}
-            className="h-56 w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-          />
+          {product.image ? (
+            <Image
+              src={product.image}
+              alt={product.name}
+              width={600}
+              height={600}
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+              className="h-56 w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+            />
+          ) : (
+            <div className="h-56 w-full bg-muted" />
+          )}
         </Link>
 
         <div className="absolute top-3 right-3">
