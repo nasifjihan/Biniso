@@ -6,7 +6,7 @@
 
 ## How to use this file
 
-- Status markers: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked
+- Status markers: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · `[-]` dropped (out of scope, decided with the owner)
 - Each task has an **ID** (e.g. `P1-02`), a **priority**, and **acceptance criteria**.
 - Work top-to-bottom: phases are ordered so each one is usable before the next.
 - Only one task should be `[~]` at a time.
@@ -149,11 +149,12 @@ customers.
 
 ## Phase 3 — Commerce
 
-- [ ] **P3-01 · Online payment gateway** — priority: high · **BLOCKED: pick provider**
+- [-] **P3-01 · Online payment gateway** — priority: high · **DROPPED: not needed**
   - Checkout is cash-on-delivery only.
   - Integrate a BD gateway (bKash / Nagad / SSLCommerz) as a second payment method with a webhook to confirm payment.
   - **Acceptance:** paid orders are marked paid automatically; COD still works.
   - **Files:** new `src/app/api/payments/*`, migration for `payment_*` columns, checkout UI
+  - **Dropped on 2026-10-23:** the store runs on cash on delivery and no gateway is wanted. No `payment_*` columns exist, so nothing has to be removed; if this is ever revived, the checkout only needs a second payment method plus a `payment_status` column.
 
 - [x] **P3-02 · Coupons / discount codes** — priority: medium
   - Add a `coupons` table (code, type, value, min order, expiry, usage limit) and apply at checkout.
@@ -169,7 +170,7 @@ customers.
   - **Acceptance:** fees are editable without a code change.
   - **Implementation:** `0008_shipping_zones.sql` adds `shipping_zones` (code, name, fee, position, active) and seeds the three options that used to be hardcoded. Customers may read active zones (they need the list to choose from) and admins may read paused ones; only admins may write. The checkout loads the active zones with the browser client, ordered by `position`, preselects the first one, and shows `Name (৳ fee)` from `describeZone()` in `src/lib/shipping.js`. The client-sent choice is now only a code: `createOrder` looks the zone up by code with `active = true` and takes the fee from the row, rejecting any other value — the same rule as product prices. `z.enum(DELIVERY_METHODS)` is gone from `src/lib/validation.js` (zones are data now) in favour of a non-empty string. New `/admin/shipping` page adds options and edits each row's name and fee inline, with pause/resume and delete; the code is derived from the name on creation and never changes, because orders store it. The email and the success page now show the zone's own name (`delivery_name`) instead of prettifying the code.
   - **Files:** `supabase/migrations/0008_shipping_zones.sql`, `src/lib/shipping.js`, `src/lib/validation.js`, `src/app/actions/createOrder.js`, `createShippingZone.js`, `updateShippingZone.js`, `deleteShippingZone.js`, `src/app/(admin)/admin/shipping/page.jsx`, `admin/layout.jsx`, `src/app/(shop)/checkout/page.jsx`, `order-success/page.jsx`, `src/lib/email.js`
-  - **Requires:** run `supabase/migrations/0008_shipping_zones.sql` in the Supabase SQL Editor after `0007_coupons.sql`. If no zone is active, checkout has no delivery option to offer.
+  - **Requires:** run `supabase/migrations/0008_shipping_zones.sql` in the Supabase SQL Editor after `0007_coupons.sql`. If no zone is active, checkout has no delivery option to offer. The migration also drops the old `delivery_method` check constraint from `0001_init.sql`, which only allowed `inside_dhaka`/`outside_dhaka`/`pickup` and would reject the new zone codes; if you already ran an earlier copy of `0008`, run that `do $$ … $$` block again on its own.
 
 - [x] **P3-04 · Order status notifications** — priority: medium
   - Status changes in admin do not notify the customer.
@@ -184,18 +185,21 @@ customers.
   - Generate a PDF server-side and attach it to the confirmation email.
   - **Acceptance:** the buyer receives a PDF invoice.
 
-- [ ] **P3-06 · Tax / VAT handling** — priority: low · **BLOCKED: confirm whether required**
+- [-] **P3-06 · Tax / VAT handling** — priority: low · **DROPPED: not needed**
   - Add configurable tax and show it as a line item.
+  - **Dropped on 2026-10-23:** no tax/VAT line is required for this store. Prices are charged as listed; `orders` has no tax column, so no migration or checkout change is involved.
 
 ---
 
 ## Phase 4 — Customer accounts
 
-- [ ] **P4-01 · Customer signup / login** — priority: high
+- [x] **P4-01 · Customer signup / login** — priority: high
   - Only admins can authenticate today; checkout is guest-only.
   - Enable customer auth (email/password + optional OTP) and account pages.
   - **Acceptance:** customers can register, log in and log out.
-  - **Files:** new `src/app/(account)/*`, update `middleware.js` matcher
+  - **Implementation:** email + password auth through server actions (`signUp`, `signIn`, `signOut`), so the form never talks to Supabase directly and the same Zod rules (`src/lib/auth.js`) run on the server. Sessions are cookie-based via `@supabase/ssr`, so both the middleware and Server Components see the signed-in user. The account pages live **inside the `(shop)` route group** (`/account`, `/account/login`, `/account/register`) instead of a separate group, so they inherit the storefront navbar and footer without a second layout; the navbar's account icon now links to `/account`. `middleware.js` gained `/account/:path*` to its matcher: any matched path that is not `/admin/*` needs a session and is sent to `/account/login?next=…`, while `/admin/*` keeps its separate `app_metadata.role === "admin"` check. Signup and login are rate-limited per IP using the existing `rateLimit()` helper. Because Supabase emails a confirmation link by default, `signUp` returns `needsConfirmation` when no session came back and the form switches to a "confirm your email" panel; the link lands on `/auth/callback`, which exchanges the PKCE code for a session cookie and then continues to a same-site-only `next` path, and an expired link shows a notice on the login page. Login and signup validation errors also map Supabase's raw messages ("Invalid login credentials", "Email not confirmed") to plain English.
+  - **Files:** `src/lib/auth.js`, `src/lib/supabase/server.js` (`getUser()`), `src/app/actions/signUp.js`, `signIn.js`, `signOut.js`, `src/app/auth/callback/route.js`, `middleware.js`, `src/app/(shop)/account/page.jsx`, `account/login/page.jsx`, `account/register/page.jsx`, `src/components/Account/LoginForm.jsx`, `RegisterForm.jsx`, `src/components/Layout/Navbar.jsx`
+  - **Notes:** no migration and no new table — `auth.users` is already there. No password reset flow yet, and `/checkout` is still guest-only (it does not attach `user_id` to the order; that is P4-02). Optional OTP verification was left out.
 
 - [ ] **P4-02 · Order history** — priority: high
   - Add a "My Orders" page scoped to the signed-in user; link `orders.user_id`.
@@ -252,9 +256,9 @@ These block or shape the phases above — resolve before starting the related ph
 
 | # | Decision | Blocks | Notes |
 | - | -------- | ------ | ----- |
-| D1 | Payment provider (bKash / Nagad / SSLCommerz / other) | P3-01 | Affects credentials, webhook design and refund flow. |
+| D1 | Payment provider (bKash / Nagad / SSLCommerz / other) | ~~P3-01~~ | **Resolved:** no gateway — COD only. P3-01 dropped. |
 | D2 | Are customer accounts in scope, or stay guest-only? | P4-* | **Resolved:** accounts are in scope. Guest checkout stays available. |
-| D3 | Is VAT/tax required for your market? | P3-06 | Skip if not applicable. |
+| D3 | Is VAT/tax required for your market? | ~~P3-06~~ | **Resolved:** not required. P3-06 dropped. |
 | D4 | Production host (Vercel / other) and domain | P1-01, P6-06 | Needed for canonical URLs, sitemap and env config. |
 | D5 | Do you need product variants, or is one price per product enough? | P2-02 | **Resolved & done (P2-02):** `product_variants` (sku, attributes, price, stock) is in place. Product-level `stock` stays as the fallback for products without variants. |
 
@@ -280,4 +284,7 @@ These block or shape the phases above — resolve before starting the related ph
 | 2026-10-22 | P2-07 | Restock on cancellation: `0006_restore_stock.sql` adds `orders.stock_restored` and a service-role-only `restore_stock()` (the inverse of `decrement_stock`, variant-aware, skips untracked `NULL` stock); `updateOrderStatus` claims the restore with a guarded update before returning stock, so cancelling is idempotent and moving an order out of `cancelled` and back never double-counts. Needs `0006_restore_stock.sql` run in Supabase. |
 | 2026-10-22 | P3-02 | Coupons: `0007_coupons.sql` adds `coupons` (percent/fixed, min order, expiry, usage limit, active) + `orders.coupon_code`/`discount`, with no public read policy and a single-statement `redeem_coupon()` so the last use cannot be claimed twice. Shared rules in `src/lib/coupons.js`; checkout previews a code via the rate-limited `validateCoupon()`, `createOrder` re-prices and redeems it after the stock is reserved (rolling back both on failure); new `/admin/coupons` page; discount surfaced on the checkout, success page, email, admin order list and invoice. Needs `0007_coupons.sql` run in Supabase. |
 | 2026-10-22 | P3-03 | Shipping zones: `0008_shipping_zones.sql` adds `shipping_zones` (code, name, fee, position, active) seeded with the three previously hardcoded options; the checkout lists active zones and `createOrder` takes the fee from the zone row, so `DELIVERY_FEES` and the fixed `delivery_method` enum are gone; new `/admin/shipping` page edits name/fee inline plus pause/resume/delete; emails and the success page show the zone's name. Needs `0008_shipping_zones.sql` run in Supabase. |
+| 2026-10-23 | P3-01, P3-06 | Dropped at the owner's request: no online payment gateway (COD only) and no tax/VAT line. Added a `[-]` dropped marker to the legend and closed decisions D1 and D3. |
 | 2026-10-23 | P3-04 | Status notifications: `sendOrderStatusEmail(order, status)` (copy map for confirmed/shipped/delivered/cancelled, silent for `pending`) is called from both success paths of `updateOrderStatus` via a best-effort `notifyCustomer()` helper that loads the order and its items; a mail failure never fails the update. No migration needed. |
+| 2026-10-23 | P3-03 (fix) | Found while reading the schema: `orders.delivery_method` still had the `0001_init.sql` check constraint listing `inside_dhaka`/`outside_dhaka`/`pickup`, but `0008_shipping_zones.sql` seeds codes with hyphens, so every order insert would have failed the constraint once that migration ran. `0008` now drops that constraint by name lookup before the RLS policies. |
+| 2026-10-23 | P4-01 | Customer accounts: `/account`, `/account/login`, `/account/register` (inside the `(shop)` group so they keep the storefront chrome), email/password auth via the `signUp`/`signIn`/`signOut` server actions with shared Zod rules and per-IP rate limiting, `/auth/callback` to exchange the emailed confirmation code for a session cookie, and `middleware.js` extended to `/account/:path*` so matched pages need a session (`/admin/*` still needs the admin role) plus `getUser()` in `src/lib/supabase/server.js`. No migration needed; guest checkout is untouched. |

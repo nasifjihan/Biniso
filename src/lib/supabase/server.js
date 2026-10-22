@@ -36,6 +36,16 @@ export async function getAdminUser() {
   return user?.app_metadata?.role === "admin" ? user : null;
 }
 
+// The signed-in customer, or null. Admins are ordinary signed-in users here.
+export async function getUser() {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  return user ?? null;
+}
+
 // Throws unless the caller is an authenticated admin.
 export async function requireAdmin() {
   const user = await getAdminUser();

@@ -49,8 +49,10 @@ export default function Navbar() {
                 )}
               </Link>
             </Button>
-            <Button variant="outline" size="icon">
-              <UserRound className="size-4" />
+            <Button variant="outline" size="icon" asChild>
+              <Link href="/account" aria-label="Your account">
+                <UserRound className="size-4" />
+              </Link>
             </Button>
             <ThemeToggle />
           </div>

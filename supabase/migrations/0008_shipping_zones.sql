@@ -21,6 +21,22 @@ values
   ('pickup', 'Store pickup', 0, 3)
 on conflict (code) do nothing;
 
+-- Orders used to store one of three fixed method names, but they now store
+-- whatever code a zone has. Drop that old list so the new codes are accepted.
+do $$
+declare c text;
+begin
+  select conname into c
+  from pg_constraint
+  where conrelid = 'public.orders'::regclass
+    and contype = 'c'
+    and pg_get_constraintdef(oid) ilike '%delivery_method%';
+
+  if c is not null then
+    execute format('alter table public.orders drop constraint %I', c);
+  end if;
+end $$;
+
 alter table public.shipping_zones enable row level security;
 
 -- Customers pick a delivery option at checkout, so any active zone is readable.
