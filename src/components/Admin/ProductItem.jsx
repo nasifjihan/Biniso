@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import VariantEditor from "@/components/Admin/VariantEditor";
+import ImageGalleryEditor from "@/components/Admin/ImageGalleryEditor";
 import {
   Select,
   SelectContent,
@@ -179,6 +180,11 @@ export default function ProductItem({ product, refresh, initialEditing = false }
             <VariantEditor
               productId={product.id}
               variants={product.product_variants || []}
+              refresh={refresh}
+            />
+            <ImageGalleryEditor
+              productId={product.id}
+              images={product.product_images || []}
               refresh={refresh}
             />
             {error && (

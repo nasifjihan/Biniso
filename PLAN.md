@@ -107,10 +107,13 @@ customers.
   - **Files:** `supabase/migrations/0003_variants.sql`, `src/lib/variants.js`, `src/app/actions/createVariant.js`, `updateVariant.js`, `deleteVariant.js`, `src/components/Admin/VariantEditor.jsx`, `ProductItem.jsx`, `src/components/ProductDetail.jsx`, `src/store/cartStore.js`, `src/app/(shop)/cart/page.jsx`, `src/app/actions/createOrder.js`, `src/lib/email.js`
   - **Requires:** run `supabase/migrations/0003_variants.sql` in the Supabase SQL Editor after `0002_stock.sql`.
 
-- [ ] **P2-03 · Multiple images / gallery** — priority: medium
+- [x] **P2-03 · Multiple images / gallery** — priority: medium
   - `products.image` is a single URL.
   - Add `product_images` (ordered) and a gallery with thumbnails.
   - **Acceptance:** products can show a gallery; first image remains the card thumbnail.
+  - **Implementation:** `product_images(product_id, url, position)` with a unique `(product_id, url)` index so the same picture cannot be added twice, and RLS mirroring `products`. `products.image` is untouched and stays the card thumbnail — the detail page renders it first, then the gallery ordered by `position`, deduped. The admin gets an `ImageGalleryEditor` under each product card: multi-file upload through the existing `/api/upload` Cloudinary route, appended one at a time so a mid-batch failure keeps the earlier successes, plus per-image removal.
+  - **Files:** `supabase/migrations/0004_product_images.sql`, `src/app/actions/createProductImage.js`, `deleteProductImage.js`, `src/components/Admin/ImageGalleryEditor.jsx`, `ProductItem.jsx`, `src/lib/products.js`, `src/components/ProductDetail.jsx`
+  - **Requires:** run `supabase/migrations/0004_product_images.sql` in the Supabase SQL Editor after `0003_variants.sql`.
 
 - [ ] **P2-04 · Categories as data** — priority: medium
   - `category` is free text, so typos fragment the category list.
@@ -250,3 +253,4 @@ These block or shape the phases above — resolve before starting the related ph
 | 2026-10-22 | P1-08 | Added `zod` and `src/lib/validation.js` (BD phone, email, length limits) shared by the checkout form (inline field errors) and `createOrder` (server-side rejection). |
 | 2026-10-22 | P2-01 | Inventory: nullable `products.stock` (NULL = not tracked) + `0002_stock.sql` with an atomic, service-role-only `decrement_stock()`; `createOrder` pre-checks availability then reserves stock and rolls the order back on shortage; admin gained a Stock field/column; storefront shows out-of-stock and disables add-to-cart. |
 | 2026-10-22 | P2-02 | Variants: `0003_variants.sql` adds `product_variants` (+ `order_items.variant_id`/`variant_label`) and makes `decrement_stock()` variant-aware; inline admin `VariantEditor`; `ProductDetail` gained per-attribute dropdowns with per-variant price/stock; cart lines keyed by `id::variantId`; `createOrder` prices, snapshots and reserves per variant. Needs `0003_variants.sql` run in Supabase. |
+| 2026-10-22 | P2-03 | Gallery: `0004_product_images.sql` adds `product_images` (position-ordered, unique per url) with `products`-style RLS; new `createProductImage`/`deleteProductImage` actions; admin `ImageGalleryEditor` for multi-file upload and removal; `ProductDetail` renders a main image with thumbnails, keeping `products.image` first so cards are unchanged. Needs `0004_product_images.sql` run in Supabase. |

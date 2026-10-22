@@ -32,6 +32,19 @@ export default function ProductDetail({ product }) {
   const variants = useMemo(() => product.product_variants || [], [product]);
   const optionKeys = useMemo(() => attributeKeys(variants), [variants]);
 
+  // `products.image` is the card thumbnail and stays first in the gallery.
+  const images = useMemo(() => {
+    const primary = product.image ? [product.image] : [];
+    const extra = [...(product.product_images || [])]
+      .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+      .map((image) => image.url);
+    return [...primary, ...extra].filter(
+      (url, index, all) => url && all.indexOf(url) === index,
+    );
+  }, [product]);
+
+  const [activeImage, setActiveImage] = useState(0);
+
   // Preselect the first buyable combination so the page is usable immediately.
   const defaultSelection = useMemo(() => {
     if (variants.length === 0) return {};
@@ -62,18 +75,47 @@ export default function ProductDetail({ product }) {
 
   return (
     <div className="container mx-auto py-16 grid md:grid-cols-2 gap-10">
-      <div className="border rounded-2xl overflow-hidden bg-card">
-        {product.image ? (
-          <Image
-            src={product.image}
-            alt={product.name}
-            width={1200}
-            height={1200}
-            sizes="(max-width: 768px) 100vw, 50vw"
-            className="w-full h-[420px] object-cover"
-          />
-        ) : (
-          <div className="w-full h-[420px] bg-muted" />
+      <div className="space-y-3">
+        <div className="border rounded-2xl overflow-hidden bg-card">
+          {images[activeImage] ? (
+            <Image
+              src={images[activeImage]}
+              alt={product.name}
+              width={1200}
+              height={1200}
+              sizes="(max-width: 768px) 100vw, 50vw"
+              className="w-full h-[420px] object-cover"
+            />
+          ) : (
+            <div className="w-full h-[420px] bg-muted" />
+          )}
+        </div>
+
+        {images.length > 1 && (
+          <div className="flex flex-wrap gap-3">
+            {images.map((url, index) => (
+              <button
+                key={url}
+                type="button"
+                onClick={() => setActiveImage(index)}
+                aria-label={`Show image ${index + 1}`}
+                className={
+                  index === activeImage
+                    ? "h-20 w-20 rounded-xl overflow-hidden border-2 border-primary"
+                    : "h-20 w-20 rounded-xl overflow-hidden border-2 border-transparent"
+                }
+              >
+                <Image
+                  src={url}
+                  alt=""
+                  width={160}
+                  height={160}
+                  sizes="80px"
+                  className="h-full w-full object-cover"
+                />
+              </button>
+            ))}
+          </div>
         )}
       </div>
 

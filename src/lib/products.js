@@ -25,7 +25,9 @@ export async function getFeaturedProducts() {
 export async function getProductById(id) {
   const { data, error } = await supabase
     .from("products")
-    .select("*, product_variants(id, attributes, sku, price, stock, created_at)")
+    .select(
+      "*, product_variants(id, attributes, sku, price, stock, created_at), product_images(id, url, position)",
+    )
     .eq("id", id)
     .order("created_at", { referencedTable: "product_variants", ascending: true })
     .single();
