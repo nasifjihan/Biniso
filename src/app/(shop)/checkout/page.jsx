@@ -1,10 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useCartStore } from "@/store/cartStore";
+import { supabase } from "@/lib/supabaseClient";
 import { createOrder } from "../../actions/createOrder";
 import { validateCoupon } from "@/app/actions/validateCoupon";
 import { parseCheckoutForm } from "@/lib/validation";
+import { describeZone } from "@/lib/shipping";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,17 +28,42 @@ export default function CheckoutPage() {
   const clearCart = useCartStore((s) => s.clearCart);
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
-  const [deliveryMethod, setDeliveryMethod] = useState("inside_dhaka");
+  const [deliveryMethod, setDeliveryMethod] = useState("");
+  const [zones, setZones] = useState([]);
   const [fieldErrors, setFieldErrors] = useState({});
   const [couponCode, setCouponCode] = useState("");
   const [coupon, setCoupon] = useState(null);
   const [applying, setApplying] = useState(false);
 
+  useEffect(() => {
+    let active = true;
+
+    async function loadZones() {
+      const { data, error: zonesError } = await supabase
+        .from("shipping_zones")
+        .select("code, name, fee, position")
+        .eq("active", true)
+        .order("position", { ascending: true })
+        .order("name", { ascending: true });
+
+      if (!active || zonesError) return;
+
+      const available = data || [];
+      setZones(available);
+      // Preselect the first option so the fee is known before submitting.
+      setDeliveryMethod((current) => current || available[0]?.code || "");
+    }
+
+    loadZones();
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const deliveryFee = useMemo(() => {
-    if (deliveryMethod === "outside_dhaka") return 120;
-    if (deliveryMethod === "pickup") return 0;
-    return 60;
-  }, [deliveryMethod]);
+    const zone = zones.find((z) => z.code === deliveryMethod);
+    return zone ? Number(zone.fee) : 0;
+  }, [zones, deliveryMethod]);
 
   async function applyCoupon() {
     setApplying(true);
@@ -97,6 +124,7 @@ export default function CheckoutPage() {
     if (res.subtotal != null) nextParams.set("subtotal", String(res.subtotal));
     if (res.delivery_fee != null) nextParams.set("delivery_fee", String(res.delivery_fee));
     if (res.delivery_method) nextParams.set("delivery_method", String(res.delivery_method));
+    if (res.delivery_name) nextParams.set("delivery_name", String(res.delivery_name));
     if (res.discount) nextParams.set("discount", String(res.discount));
     if (res.coupon_code) nextParams.set("coupon_code", String(res.coupon_code));
 
@@ -203,16 +231,27 @@ export default function CheckoutPage() {
 
                 <div className="space-y-2">
                   <Label>Delivery</Label>
-                  <Select value={deliveryMethod} onValueChange={setDeliveryMethod}>
+                  <Select
+                    value={deliveryMethod}
+                    onValueChange={setDeliveryMethod}
+                    disabled={zones.length === 0}
+                  >
                     <SelectTrigger>
-                      <SelectValue />
+                      <SelectValue placeholder="Loading delivery options..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="inside_dhaka">Inside Dhaka (৳ 60)</SelectItem>
-                      <SelectItem value="outside_dhaka">Outside Dhaka (৳ 120)</SelectItem>
-                      <SelectItem value="pickup">Store pickup (৳ 0)</SelectItem>
+                      {zones.map((zone) => (
+                        <SelectItem key={zone.code} value={zone.code}>
+                          {describeZone(zone)}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
+                  {fieldErrors.delivery_method && (
+                    <p className="text-sm text-destructive">
+                      {fieldErrors.delivery_method}
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2">

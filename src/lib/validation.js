@@ -1,7 +1,5 @@
 import { z } from "zod";
 
-export const DELIVERY_METHODS = ["inside_dhaka", "outside_dhaka", "pickup"];
-
 // Bangladeshi mobile numbers: optional +88/88 prefix, then 01[3-9] and 8 digits.
 const BD_PHONE = /^(?:\+?88)?01[3-9]\d{8}$/;
 
@@ -23,7 +21,9 @@ export const checkoutSchema = z.object({
     .min(10, "Please enter a complete delivery address")
     .max(500, "Address is too long"),
   notes: z.string().max(500, "Notes are too long").transform((v) => v || null),
-  delivery_method: z.enum(DELIVERY_METHODS),
+  // Which zones exist is data, so only the presence of a choice is checked here.
+  // The code is matched against the shipping_zones table when the order is placed.
+  delivery_method: z.string().min(1, "Choose a delivery option"),
 });
 
 const text = (value) => String(value ?? "").trim();

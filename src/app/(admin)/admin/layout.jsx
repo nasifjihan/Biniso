@@ -37,6 +37,9 @@ export default function AdminLayout({ children }) {
               <Button variant="ghost" asChild>
                 <Link href="/admin/coupons">Coupons</Link>
               </Button>
+              <Button variant="ghost" asChild>
+                <Link href="/admin/shipping">Delivery</Link>
+              </Button>
             </nav>
           </div>
 

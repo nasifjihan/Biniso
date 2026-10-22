@@ -8,12 +8,6 @@ import { parseCheckoutForm } from "@/lib/validation";
 import { variantLabel } from "@/lib/variants";
 import { COUPON_COLUMNS, checkCoupon, normaliseCode } from "@/lib/coupons";
 
-const DELIVERY_FEES = {
-  inside_dhaka: 60,
-  outside_dhaka: 120,
-  pickup: 0,
-};
-
 export async function createOrder(formData, cart) {
   try {
     // Honeypot: real users never fill this hidden field.
@@ -60,6 +54,26 @@ export async function createOrder(formData, cart) {
 
     // Guest checkout runs with the service role key so it bypasses RLS.
     const supabase = createSupabaseAdminClient();
+
+    // The fee comes from the zone the customer picked, never from the client,
+    // so a paused or invented delivery option is rejected here.
+    const { data: zone, error: zoneError } = await supabase
+      .from("shipping_zones")
+      .select("code, name, fee")
+      .eq("code", delivery_method)
+      .eq("active", true)
+      .maybeSingle();
+
+    if (zoneError) {
+      return { ok: false, error: zoneError.message };
+    }
+    if (!zone) {
+      return {
+        ok: false,
+        error: "Choose a valid delivery option.",
+        fieldErrors: { delivery_method: "Choose a valid delivery option." },
+      };
+    }
 
     // Price the order from the database, never from the client cart.
     const { data: products, error: productsError } = await supabase
@@ -178,7 +192,7 @@ export async function createOrder(formData, cart) {
       discount = check.discount;
     }
 
-    const delivery_fee = DELIVERY_FEES[delivery_method];
+    const delivery_fee = Number(zone.fee);
     const total = subtotal - discount + delivery_fee;
 
     const { data: order, error: orderError } = await supabase
@@ -294,13 +308,14 @@ export async function createOrder(formData, cart) {
       discount,
       coupon_code: appliedCoupon?.code ?? null,
       delivery_method,
+      delivery_name: zone.name,
       delivery_fee,
       total,
     };
 
     try {
-      await sendOrderEmail({ ...order, items });
-      await sendOrderConfirmation({ ...order, items });
+      await sendOrderEmail({ ...order, items, delivery_name: zone.name });
+      await sendOrderConfirmation({ ...order, items, delivery_name: zone.name });
     } catch (e) {
       return { ...result, emailWarning: e?.message || "Email failed" };
     }

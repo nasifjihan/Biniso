@@ -14,6 +14,7 @@ export default function SuccessPage() {
   const couponCode = params.get("coupon_code");
   const total = params.get("total");
   const deliveryMethod = params.get("delivery_method");
+  const deliveryName = params.get("delivery_name");
 
   return (
     <div className="container mx-auto py-16 max-w-2xl">
@@ -42,7 +43,9 @@ export default function SuccessPage() {
             {deliveryMethod && (
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Delivery</span>
-                <span className="capitalize">{deliveryMethod.replaceAll("_", " ")}</span>
+                <span className="capitalize">
+                  {deliveryName || deliveryMethod.replaceAll("_", " ")}
+                </span>
               </div>
             )}
             {discount && Number(discount) > 0 && (

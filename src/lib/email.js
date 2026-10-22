@@ -48,7 +48,7 @@ function buildOrderHtml(order, heading) {
     ${order.city ? `<p>City: ${order.city}</p>` : ""}
     ${
       order.delivery_method
-        ? `<p>Delivery: ${String(order.delivery_method).replaceAll("_", " ")} (৳ ${order.delivery_fee || 0})</p>`
+        ? `<p>Delivery: ${order.delivery_name || String(order.delivery_method).replaceAll("_", " ")} (৳ ${order.delivery_fee || 0})</p>`
         : ""
     }
     ${order.notes ? `<p>Notes: ${order.notes}</p>` : ""}
