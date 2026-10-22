@@ -17,7 +17,9 @@ export default [
 
   // BASE CONFIGURATION
   {
-    files: ["**/*.{js,jsx,ts,tsx}"],
+    // `mjs`/`cjs` are included so the build and test config files are linted with
+    // the node globals below instead of by `js.configs.recommended` alone.
+    files: ["**/*.{js,jsx,mjs,cjs,ts,tsx}"],
     languageOptions: {
       ecmaVersion: "latest",
       sourceType: "module",

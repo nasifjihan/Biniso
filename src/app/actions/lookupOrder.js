@@ -3,6 +3,7 @@
 import { headers } from "next/headers";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { rateLimit } from "@/lib/rateLimit";
+import { reportError } from "@/lib/monitoring";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -52,7 +53,13 @@ export async function lookupOrder({ orderId, phone }) {
     .eq("id", id)
     .maybeSingle();
 
-  if (error) return { ok: false, error: error.message };
+  // A raw PostgREST message would name tables and columns, and this runs with no
+  // session at all, so the detail goes to the server log and the caller gets a
+  // generic reply.
+  if (error) {
+    await reportError(error, { where: "lookupOrder" });
+    return { ok: false, error: "Could not look that order up. Please try again." };
+  }
 
   // An unknown id and a wrong phone give the same answer, so the form cannot be
   // used to discover which order ids exist.

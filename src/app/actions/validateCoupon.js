@@ -3,6 +3,7 @@
 import { headers } from "next/headers";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { rateLimit } from "@/lib/rateLimit";
+import { reportError } from "@/lib/monitoring";
 import { COUPON_COLUMNS, checkCoupon, describeCoupon, normaliseCode } from "@/lib/coupons";
 
 /**
@@ -41,7 +42,12 @@ export async function validateCoupon(code, subtotal) {
     .eq("code", normalised)
     .maybeSingle();
 
-  if (error) return { ok: false, error: error.message };
+  // Reachable without a session, so the raw database error is logged rather than
+  // returned — it would otherwise name tables and columns to an anonymous caller.
+  if (error) {
+    await reportError(error, { where: "validateCoupon" });
+    return { ok: false, error: "Could not check that code. Please try again." };
+  }
 
   const check = checkCoupon(data, amount);
   if (!check.ok) return { ok: false, error: check.error };
