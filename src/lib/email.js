@@ -2,6 +2,35 @@ import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+function formatItems(items) {
+  if (!Array.isArray(items) || items.length === 0) return "";
+
+  const rows = items
+    .map(
+      (item) => `
+        <tr>
+          <td style="padding:4px 8px;border:1px solid #ddd">${item.name}</td>
+          <td style="padding:4px 8px;border:1px solid #ddd;text-align:center">${item.quantity}</td>
+          <td style="padding:4px 8px;border:1px solid #ddd;text-align:right">৳ ${item.price}</td>
+          <td style="padding:4px 8px;border:1px solid #ddd;text-align:right">৳ ${item.price * item.quantity}</td>
+        </tr>`,
+    )
+    .join("");
+
+  return `
+    <table style="border-collapse:collapse;margin-top:8px">
+      <thead>
+        <tr>
+          <th style="padding:4px 8px;border:1px solid #ddd;text-align:left">Item</th>
+          <th style="padding:4px 8px;border:1px solid #ddd">Qty</th>
+          <th style="padding:4px 8px;border:1px solid #ddd;text-align:right">Price</th>
+          <th style="padding:4px 8px;border:1px solid #ddd;text-align:right">Subtotal</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
 export async function sendOrderEmail(order) {
   const to = process.env.ORDER_RECEIVER_EMAIL || order?.email;
   if (!to || !process.env.RESEND_API_KEY) return;
@@ -27,7 +56,10 @@ export async function sendOrderEmail(order) {
               })</p>`
             : ""
         }
-        <p>Total: ৳ ${order.total}</p>
+        ${order.notes ? `<p>Notes: ${order.notes}</p>` : ""}
+        ${formatItems(order.items)}
+        ${order.subtotal ? `<p>Subtotal: ৳ ${order.subtotal}</p>` : ""}
+        <p><strong>Total: ৳ ${order.total}</strong></p>
       `,
     });
   } catch (e) {

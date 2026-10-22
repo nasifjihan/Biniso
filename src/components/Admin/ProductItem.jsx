@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { updateProduct } from "@/app/actions/updateProduct";
+import { deleteProduct } from "@/app/actions/deleteProduct";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -39,23 +40,14 @@ export default function ProductItem({ product, refresh, initialEditing = false }
         name: form.name.trim(),
         price: Number(form.price),
         description: form.description.trim(),
-        category: form.category.trim() || null,
+        category: form.category.trim(),
         featured: form.featured,
         status: form.status,
         image: form.image.trim(),
       };
-      const { data: updatedRows, error: updateError } = await supabase
-        .from("products")
-        .update(update)
-        .eq("id", product.id)
-        .select("id");
-      if (updateError) {
-        throw new Error(updateError.message);
-      }
-      if (!updatedRows || updatedRows.length === 0) {
-        throw new Error(
-          "No rows were updated. This usually means the row was blocked by RLS policy or the id does not exist.",
-        );
+      const result = await updateProduct(product.id, update);
+      if (!result?.ok) {
+        throw new Error(result?.error || "Failed to update product");
       }
       setEditing(false);
       await refresh();
@@ -71,18 +63,9 @@ export default function ProductItem({ product, refresh, initialEditing = false }
     setDeleting(true);
     setError("");
     try {
-      const { data: deletedRows, error: deleteError } = await supabase
-        .from("products")
-        .delete()
-        .eq("id", product.id)
-        .select("id");
-      if (deleteError) {
-        throw new Error(deleteError.message);
-      }
-      if (!deletedRows || deletedRows.length === 0) {
-        throw new Error(
-          "No rows were deleted. This usually means the row was blocked by RLS policy or the id does not exist.",
-        );
+      const result = await deleteProduct(product.id);
+      if (!result?.ok) {
+        throw new Error(result?.error || "Failed to delete product");
       }
       await refresh();
     } catch (err) {

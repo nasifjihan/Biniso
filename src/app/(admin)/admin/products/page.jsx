@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import { createProduct } from "@/app/actions/createProduct";
 import { Button } from "@/components/ui/button";
 import ProductItem from "@/components/Admin/ProductItem";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -96,19 +97,17 @@ export default function AdminProducts() {
       }
       const { url } = await res.json();
 
-      const { error: insertError } = await supabase.from("products").insert([
-        {
-          name: form.name.trim(),
-          price: Number(form.price),
-          description: form.description.trim(),
-          category: form.category.trim() || null,
-          status: form.status,
-          featured: form.featured,
-          image: typeof url === "string" ? url.trim() : url,
-        },
-      ]);
-      if (insertError) {
-        throw new Error(insertError.message);
+      const result = await createProduct({
+        name: form.name,
+        price: form.price,
+        description: form.description,
+        category: form.category,
+        status: form.status,
+        featured: form.featured,
+        image: url,
+      });
+      if (!result?.ok) {
+        throw new Error(result?.error || "Failed to add product");
       }
 
       setForm({

@@ -8,19 +8,22 @@ const slides = [
     title: "Game Controller",
     subtitle: "Lorem ipsum dolor sit amet, consectetur elit, sed do eiusmod tempor incididunt ut dolore magna aliqua.",
     cta: "Explore Now",
-    image: "/window.svg",
+    image:
+      "https://coresg-normal.trae.ai/api/ide/v1/text_to_image?prompt=wireless%20video%20game%20controller%20product%20shot%20on%20clean%20light%20studio%20background&image_size=landscape_4_3",
   },
   {
     title: "Smart Watch",
     subtitle: "Track health metrics and stay connected with a sleek design.",
     cta: "Explore Now",
-    image: "/next.svg",
+    image:
+      "https://coresg-normal.trae.ai/api/ide/v1/text_to_image?prompt=modern%20smart%20watch%20product%20photo%20on%20clean%20studio%20background&image_size=landscape_4_3",
   },
   {
     title: "VR Headset",
     subtitle: "Immersive experiences with crystal clear visuals.",
     cta: "Explore Now",
-    image: "/globe.svg",
+    image:
+      "https://coresg-normal.trae.ai/api/ide/v1/text_to_image?prompt=futuristic%20vr%20headset%20product%20photo%20on%20clean%20studio%20background&image_size=landscape_4_3",
   },
 ];
 

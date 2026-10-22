@@ -1,6 +1,5 @@
 import InvoiceClient from "@/components/InvoiceClient";
-import { createServerClient } from "@supabase/auth-helpers-nextjs";
-import { cookies } from "next/headers";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export default async function InvoicePage({ params }) {
   try {
@@ -14,27 +13,7 @@ export default async function InvoicePage({ params }) {
       );
     }
 
-    const cookieStore = await cookies();
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll();
-          },
-          setAll(cookiesToSet) {
-            try {
-              cookiesToSet.forEach(({ name, value, options }) =>
-                cookieStore.set(name, value, options),
-              );
-            } catch (e) {
-              return;
-            }
-          },
-        },
-      },
-    );
+    const supabase = await createSupabaseServerClient();
 
     const { data: order, error } = await supabase
       .from("orders")

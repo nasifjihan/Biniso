@@ -20,7 +20,7 @@ export const metadata = {
     siteName: "Biniso",
     images: [
       {
-        url: "/og-image.png",
+        url: "https://coresg-normal.trae.ai/api/ide/v1/text_to_image?prompt=premium%20online%20shopping%20ecommerce%20brand%20banner%20with%20gradient%20background&image_size=landscape_16_9",
         width: 1200,
         height: 630,
         alt: "Biniso Banner",
@@ -33,7 +33,9 @@ export const metadata = {
     title: "Biniso - Premium Products Online",
     description:
       "Discover our top-quality products, carefully selected for you.",
-    images: ["/og-image.png"],
+    images: [
+      "https://coresg-normal.trae.ai/api/ide/v1/text_to_image?prompt=premium%20online%20shopping%20ecommerce%20brand%20banner%20with%20gradient%20background&image_size=landscape_16_9",
+    ],
   },
 };
 

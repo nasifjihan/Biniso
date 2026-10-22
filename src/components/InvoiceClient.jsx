@@ -8,6 +8,11 @@ export default function InvoiceClient({ order }) {
   const contentRef = useRef(null);
   const handlePrint = useReactToPrint({ contentRef });
 
+  const storeName = process.env.NEXT_PUBLIC_STORE_NAME || "Biniso";
+  const storeAddress =
+    process.env.NEXT_PUBLIC_STORE_ADDRESS || "Dhaka, Bangladesh";
+  const storePhone = process.env.NEXT_PUBLIC_STORE_PHONE || "01XXXXXXXXX";
+
   if (!order) {
     return (
       <div className="container mx-auto py-10">
@@ -35,9 +40,9 @@ export default function InvoiceClient({ order }) {
           </div>
 
           <div className="text-right">
-            <h2 className="font-bold">Your Store Name</h2>
-            <p>Dhaka, Bangladesh</p>
-            <p>Phone: 01XXXXXXXXX</p>
+            <h2 className="font-bold">{storeName}</h2>
+            <p>{storeAddress}</p>
+            <p>Phone: {storePhone}</p>
           </div>
         </div>
 

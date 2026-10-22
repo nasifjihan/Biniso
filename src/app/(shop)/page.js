@@ -25,12 +25,12 @@ export default async function HomePage() {
           <PromoCard
             title="Winter Sale 20% OFF"
             subtitle="Explore Now"
-            image="/vercel.svg"
+            image="https://coresg-normal.trae.ai/api/ide/v1/text_to_image?prompt=winter%20fashion%20sale%20promotional%20still%20life%20on%20clean%20background&image_size=landscape_4_3"
           />
           <PromoCard
             title="Airpods Pro 30% OFF"
             subtitle="Accessories"
-            image="/window.svg"
+            image="https://coresg-normal.trae.ai/api/ide/v1/text_to_image?prompt=wireless%20earbuds%20charging%20case%20product%20photo%20on%20clean%20white%20background&image_size=landscape_4_3"
           />
         </div>
       </div>

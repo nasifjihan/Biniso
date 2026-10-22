@@ -9,6 +9,7 @@ export default function CategorySearchBar() {
   const [categories, setCategories] = useState([]);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const [category, setCategory] = useState("");
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -23,25 +24,33 @@ export default function CategorySearchBar() {
     loadCategories();
   }, []);
 
-  async function performSearch() {
-    if (!query.trim()) {
+  async function runSearch(nextQuery, nextCategory) {
+    if (!nextCategory && !nextQuery.trim()) {
       setResults([]);
       return;
     }
+
     setLoading(true);
-    const { data } = await supabase
-      .from("products")
-      .select("*")
-      .ilike("name", `%${query}%`)
-      .limit(12);
-    setResults(data || []);
+    let request = supabase.from("products").select("*");
+    request = nextCategory
+      ? request.eq("category", nextCategory)
+      : request.ilike("name", `%${nextQuery.trim()}%`);
+
+    const { data, error } = await request.limit(12);
+    setResults(error ? [] : data || []);
     setLoading(false);
+  }
+
+  function handleSearch() {
+    setCategory("");
+    runSearch(query, "");
   }
 
   function handleCategoryClick(cat) {
     setQuery(cat);
+    setCategory(cat);
     setOpen(false);
-    setTimeout(() => performSearch(), 0);
+    runSearch(cat, cat);
   }
 
   const hasResults = useMemo(() => results.length > 0, [results]);
@@ -63,13 +72,16 @@ export default function CategorySearchBar() {
         <div className="border rounded-xl h-12 px-4 flex items-center bg-background">
           <input
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              if (category) setCategory("");
+            }}
             placeholder="Searching for..."
             className="w-full bg-transparent outline-none"
           />
         </div>
         <button
-          onClick={performSearch}
+          onClick={handleSearch}
           className="border rounded-xl h-12 flex items-center justify-center bg-background"
         >
           <Search className="size-5" />

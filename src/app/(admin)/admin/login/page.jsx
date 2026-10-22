@@ -21,17 +21,25 @@ export default function AdminLogin() {
     const email = e.target.email.value;
     const password = e.target.password.value;
 
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
-    setLoading(false);
-
     if (error) {
+      setLoading(false);
       setError(error.message);
       return;
     }
+
+    if (data?.user?.app_metadata?.role !== "admin") {
+      await supabase.auth.signOut();
+      setLoading(false);
+      setError("This account does not have admin access.");
+      return;
+    }
+
+    setLoading(false);
 
     const next = new URLSearchParams(window.location.search).get("next");
     router.replace(next || "/admin/orders");
