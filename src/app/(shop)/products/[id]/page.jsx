@@ -1,9 +1,9 @@
 import { cache } from "react";
 import { notFound } from "next/navigation";
 import ProductDetail from "@/components/ProductDetail";
+import JsonLd from "@/components/JsonLd";
 import { getProductById } from "@/lib/products";
-
-const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+import { breadcrumbJsonLd, pageMetadata, productJsonLd } from "@/lib/seo";
 
 // cache() dedupes the query between generateMetadata and the page render.
 const loadProduct = cache(async (id) => {
@@ -19,31 +19,22 @@ export async function generateMetadata({ params }) {
   const product = await loadProduct(id);
 
   if (!product) {
-    return { title: "Product not found | Biniso" };
+    return { title: "Product not found", robots: { index: false } };
   }
 
   const description =
     product.description?.trim() || `Buy ${product.name} online at Biniso.`;
-  const images = product.image ? [product.image] : undefined;
+  const images = product.product_images
+    ?.map((image) => image.url)
+    .filter(Boolean)
+    .slice(0, 4);
 
-  return {
-    title: `${product.name} | Biniso`,
+  return pageMetadata({
+    title: product.name,
     description,
-    alternates: { canonical: `${baseUrl}/products/${id}` },
-    openGraph: {
-      title: product.name,
-      description,
-      url: `${baseUrl}/products/${id}`,
-      type: "website",
-      images,
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: product.name,
-      description,
-      images,
-    },
-  };
+    path: `/products/${product.id}`,
+    images: images?.length ? images : product.image ? [product.image] : undefined,
+  });
 }
 
 export default async function ProductPage({ params }) {
@@ -52,5 +43,23 @@ export default async function ProductPage({ params }) {
 
   if (!product) notFound();
 
-  return <ProductDetail product={product} />;
+  const crumbs = [
+    { name: "Home", path: "/" },
+    { name: "All Products", path: "/products" },
+  ];
+  if (product.category?.name) {
+    crumbs.push({
+      name: product.category.name,
+      path: `/products?category=${product.category.slug}`,
+    });
+  }
+  crumbs.push({ name: product.name, path: `/products/${product.id}` });
+
+  return (
+    <>
+      <JsonLd data={productJsonLd(product)} />
+      <JsonLd data={breadcrumbJsonLd(crumbs)} />
+      <ProductDetail product={product} />
+    </>
+  );
 }

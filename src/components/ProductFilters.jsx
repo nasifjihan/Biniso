@@ -53,14 +53,19 @@ export default function ProductFilters({ categories, sorts, values, query = "" }
   return (
     <div className="rounded-2xl border p-4 flex flex-wrap items-end gap-4">
       <div className="space-y-2 min-w-48">
-        <Label>Category</Label>
+        <span
+          id="category-filter-label"
+          className="block text-sm font-medium leading-none"
+        >
+          Category
+        </span>
         <Select
           value={values.category || ALL_CATEGORIES}
           onValueChange={(v) =>
             apply({ category: v === ALL_CATEGORIES ? "" : v })
           }
         >
-          <SelectTrigger className="w-full">
+          <SelectTrigger className="w-full" aria-labelledby="category-filter-label">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -107,9 +112,14 @@ export default function ProductFilters({ categories, sorts, values, query = "" }
       </form>
 
       <div className="space-y-2 min-w-44">
-        <Label>Sort by</Label>
+        <span
+          id="sort-filter-label"
+          className="block text-sm font-medium leading-none"
+        >
+          Sort by
+        </span>
         <Select value={values.sort} onValueChange={(v) => apply({ sort: v })}>
-          <SelectTrigger className="w-full">
+          <SelectTrigger className="w-full" aria-labelledby="sort-filter-label">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

@@ -140,12 +140,12 @@ export default function AdminCoupons() {
               </div>
 
               <div className="space-y-2">
-                <Label>Type</Label>
+                <Label htmlFor="coupon-type">Type</Label>
                 <Select
                   value={form.type}
                   onValueChange={(v) => set("type", v)}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id="coupon-type">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>

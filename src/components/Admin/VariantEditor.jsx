@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,11 +13,22 @@ import { formatOptions, variantLabel } from "@/lib/variants";
 const emptyInput = { options: "", sku: "", price: "", stock: "" };
 
 function VariantFields({ value, onChange, disabled }) {
+  // This block renders once per variant row plus once for the draft, so the ids
+  // have to be unique instead of fixed.
+  const uid = useId();
+  const optionsId = `${uid}-options`;
+  const skuId = `${uid}-sku`;
+  const priceId = `${uid}-price`;
+  const stockId = `${uid}-stock`;
+
   return (
     <div className="grid grid-cols-3 gap-2">
       <div className="col-span-3 space-y-1">
-        <Label className="text-xs">Options</Label>
+        <Label htmlFor={optionsId} className="text-xs">
+          Options
+        </Label>
         <Input
+          id={optionsId}
           value={value.options}
           disabled={disabled}
           onChange={(e) => onChange({ ...value, options: e.target.value })}
@@ -25,8 +36,11 @@ function VariantFields({ value, onChange, disabled }) {
         />
       </div>
       <div className="space-y-1">
-        <Label className="text-xs">SKU</Label>
+        <Label htmlFor={skuId} className="text-xs">
+          SKU
+        </Label>
         <Input
+          id={skuId}
           value={value.sku}
           disabled={disabled}
           onChange={(e) => onChange({ ...value, sku: e.target.value })}
@@ -34,8 +48,11 @@ function VariantFields({ value, onChange, disabled }) {
         />
       </div>
       <div className="space-y-1">
-        <Label className="text-xs">Price</Label>
+        <Label htmlFor={priceId} className="text-xs">
+          Price
+        </Label>
         <Input
+          id={priceId}
           type="number"
           min="0"
           value={value.price}
@@ -45,8 +62,11 @@ function VariantFields({ value, onChange, disabled }) {
         />
       </div>
       <div className="space-y-1">
-        <Label className="text-xs">Stock</Label>
+        <Label htmlFor={stockId} className="text-xs">
+          Stock
+        </Label>
         <Input
+          id={stockId}
           type="number"
           min="0"
           value={value.stock}

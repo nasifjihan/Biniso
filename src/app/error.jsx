@@ -6,6 +6,20 @@ import { Button } from "@/components/ui/button";
 export default function GlobalError({ error, reset }) {
   useEffect(() => {
     console.error(error);
+
+    // The webhook URL stays on the server, so the report is posted to our own
+    // route. `keepalive` lets it finish even if the shopper navigates away.
+    fetch("/api/report-error", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      keepalive: true,
+      body: JSON.stringify({
+        message: error?.message,
+        stack: error?.stack,
+        digest: error?.digest,
+        path: window.location.pathname,
+      }),
+    }).catch(() => {});
   }, [error]);
 
   return (

@@ -58,6 +58,9 @@ export default function HeroCarousel() {
           width={640}
           height={480}
           sizes="(max-width: 768px) 100vw, 50vw"
+          // The first slide is the home page's largest paint; later slides are
+          // fetched when the carousel reaches them.
+          priority={index === 0}
           className="max-h-64 w-auto object-contain"
         />
       </div>

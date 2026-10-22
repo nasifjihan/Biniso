@@ -1,41 +1,32 @@
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
-
-// export const metadata = {
-//   title: "Biniso",
-//   description: "Best products online",
-// };
+import { DEFAULT_OG_IMAGE, SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/seo";
 
 export const metadata = {
-  title: "Biniso",
-  description: "Best products online",
+  // Resolves every relative URL in a page's metadata to the live domain.
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: `${SITE_NAME} — Premium products online`,
+    template: `%s | ${SITE_NAME}`,
+  },
+  description: SITE_DESCRIPTION,
   keywords: ["ecommerce", "shop", "products", "Bangladesh"],
   authors: [{ name: "Nasif Zeehan" }],
+  alternates: { canonical: "/" },
   openGraph: {
-    title: "Biniso - Premium Products Online",
-    description:
-      "Discover our top-quality products, carefully selected for you.",
-    url: "https://biniso.com",
-    siteName: "Biniso",
-    images: [
-      {
-        url: "https://coresg-normal.trae.ai/api/ide/v1/text_to_image?prompt=premium%20online%20shopping%20ecommerce%20brand%20banner%20with%20gradient%20background&image_size=landscape_16_9",
-        width: 1200,
-        height: 630,
-        alt: "Biniso Banner",
-      },
-    ],
+    title: `${SITE_NAME} - Premium Products Online`,
+    description: SITE_DESCRIPTION,
+    url: SITE_URL,
+    siteName: SITE_NAME,
+    images: [{ url: DEFAULT_OG_IMAGE, width: 1200, height: 630, alt: SITE_NAME }],
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Biniso - Premium Products Online",
-    description:
-      "Discover our top-quality products, carefully selected for you.",
-    images: [
-      "https://coresg-normal.trae.ai/api/ide/v1/text_to_image?prompt=premium%20online%20shopping%20ecommerce%20brand%20banner%20with%20gradient%20background&image_size=landscape_16_9",
-    ],
+    title: `${SITE_NAME} - Premium Products Online`,
+    description: SITE_DESCRIPTION,
+    images: [DEFAULT_OG_IMAGE],
   },
 };
 

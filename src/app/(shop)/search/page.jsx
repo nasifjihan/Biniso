@@ -3,12 +3,23 @@ import { getCategories, getProductPage, PRODUCT_SORTS } from "@/lib/products";
 import ProductCard from "@/components/ProductCard";
 import ProductFilters from "@/components/ProductFilters";
 import { Button } from "@/components/ui/button";
+import { pageMetadata } from "@/lib/seo";
 import { Search } from "lucide-react";
 
-export const metadata = {
-  title: "Search - Biniso",
-  description: "Search the Biniso catalog and filter the results.",
-};
+export async function generateMetadata({ searchParams }) {
+  const params = await searchParams;
+  const query = typeof params.q === "string" ? params.q.trim() : "";
+
+  return {
+    ...pageMetadata({
+      title: query ? `Search: ${query}` : "Search",
+      description: "Search the Biniso catalog and filter the results.",
+      path: "/search",
+    }),
+    // Results change with every query, so they are kept out of the index.
+    robots: { index: false, follow: true },
+  };
+}
 
 const PER_PAGE = 12;
 

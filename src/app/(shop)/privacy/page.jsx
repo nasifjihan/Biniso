@@ -1,8 +1,11 @@
-export const metadata = {
-  title: "Privacy Policy | Biniso",
+import { pageMetadata } from "@/lib/seo";
+
+export const metadata = pageMetadata({
+  title: "Privacy Policy",
   description:
     "How Biniso collects, uses and protects your personal information.",
-};
+  path: "/privacy",
+});
 
 export default function PrivacyPolicyPage() {
   return (

@@ -42,6 +42,7 @@ export default function ProductCard({ product }) {
             size="icon"
             variant="secondary"
             className="rounded-full"
+            aria-label={favored ? "Remove from favourites" : "Add to favourites"}
             onClick={() => {
               toggleFavorite(product.id);
               toast.success(favored ? "Removed from favorites" : "Added to favorites");

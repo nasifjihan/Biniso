@@ -85,6 +85,7 @@ export default function CartPage() {
                         <Button
                           variant="outline"
                           size="icon-sm"
+                          aria-label={`Decrease quantity of ${item.name}`}
                           onClick={() => decreaseQty(lineKey(item))}
                         >
                           <Minus className="size-4" />
@@ -93,6 +94,7 @@ export default function CartPage() {
                         <Button
                           variant="outline"
                           size="icon-sm"
+                          aria-label={`Increase quantity of ${item.name}`}
                           onClick={() => increaseQty(lineKey(item))}
                         >
                           <Plus className="size-4" />

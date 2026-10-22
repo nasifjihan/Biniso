@@ -84,6 +84,9 @@ export default function ProductDetail({ product }) {
               width={1200}
               height={1200}
               sizes="(max-width: 768px) 100vw, 50vw"
+              // The main image is this page's largest paint, so only the one the
+              // page opens on is fetched at high priority.
+              priority={activeImage === 0}
               className="w-full h-[420px] object-cover"
             />
           ) : (
@@ -126,6 +129,7 @@ export default function ProductDetail({ product }) {
             size="icon"
             variant="outline"
             className="rounded-full"
+            aria-label={favored ? "Remove from favourites" : "Add to favourites"}
             onClick={() => {
               toggleFavorite(product.id);
               toast.success(favored ? "Removed from favorites" : "Added to favorites");
@@ -195,12 +199,14 @@ export default function ProductDetail({ product }) {
           <Button
             variant="outline"
             size="icon"
+            aria-label="Decrease quantity"
             onClick={() => setQty((q) => Math.max(1, q - 1))}
           >
             <Minus className="size-4" />
           </Button>
           <Input
             value={qty}
+            aria-label="Quantity"
             onChange={(e) =>
               setQty(
                 Math.max(
@@ -217,6 +223,7 @@ export default function ProductDetail({ product }) {
           <Button
             variant="outline"
             size="icon"
+            aria-label="Increase quantity"
             disabled={tracked && qty >= stock}
             onClick={() => setQty((q) => Math.min(q + 1, maxQty ?? q + 1))}
           >

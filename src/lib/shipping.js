@@ -18,7 +18,13 @@ export function parseShippingZoneForm(input) {
     return { ok: false, error: "Enter a name between 2 and 60 characters." };
   }
 
-  const fee = Number(input?.fee);
+  // A blank fee must not quietly become free delivery, so 0 has to be typed.
+  const rawFee = input?.fee;
+  if (rawFee === "" || rawFee === null || rawFee === undefined) {
+    return { ok: false, error: "Enter a delivery fee of 0 or more." };
+  }
+
+  const fee = Number(rawFee);
   if (!Number.isFinite(fee) || fee < 0) {
     return { ok: false, error: "Enter a delivery fee of 0 or more." };
   }

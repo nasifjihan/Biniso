@@ -107,28 +107,38 @@ export default function ProductItem({
         {editing ? (
           <div className="space-y-3">
             <div className="space-y-2">
-              <Label>Name</Label>
+              <Label htmlFor="product-name">Name</Label>
               <Input
+                id="product-name"
                 value={form.name}
                 onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label>Price</Label>
+                <Label htmlFor="product-price">Price</Label>
                 <Input
+                  id="product-price"
                   type="number"
                   value={form.price}
                   onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))}
                 />
               </div>
               <div className="space-y-2">
-                <Label>Status</Label>
+                <span
+                  id="product-status-label"
+                  className="block text-sm font-medium leading-none"
+                >
+                  Status
+                </span>
                 <Select
                   value={form.status}
                   onValueChange={(v) => setForm((f) => ({ ...f, status: v }))}
                 >
-                  <SelectTrigger className="w-full">
+                  <SelectTrigger
+                    className="w-full"
+                    aria-labelledby="product-status-label"
+                  >
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -140,8 +150,9 @@ export default function ProductItem({
               </div>
             </div>
             <div className="space-y-2">
-              <Label>Description</Label>
+              <Label htmlFor="product-description">Description</Label>
               <Textarea
+                id="product-description"
                 value={form.description}
                 onChange={(e) =>
                   setForm((f) => ({ ...f, description: e.target.value }))
@@ -150,7 +161,12 @@ export default function ProductItem({
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label>Category</Label>
+                <span
+                  id="product-category-label"
+                  className="block text-sm font-medium leading-none"
+                >
+                  Category
+                </span>
                 <Select
                   value={form.categoryId || NO_CATEGORY}
                   onValueChange={(v) =>
@@ -160,7 +176,10 @@ export default function ProductItem({
                     }))
                   }
                 >
-                  <SelectTrigger className="w-full">
+                  <SelectTrigger
+                    className="w-full"
+                    aria-labelledby="product-category-label"
+                  >
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -174,8 +193,9 @@ export default function ProductItem({
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Stock</Label>
+                <Label htmlFor="product-stock">Stock</Label>
                 <Input
+                  id="product-stock"
                   type="number"
                   min="0"
                   value={form.stock}
@@ -185,16 +205,23 @@ export default function ProductItem({
               </div>
             </div>
             <div className="space-y-2">
-              <Label>Image URL</Label>
+              <Label htmlFor="product-image">Image URL</Label>
               <Input
+                id="product-image"
                 value={form.image}
                 onChange={(e) => setForm((f) => ({ ...f, image: e.target.value }))}
                 placeholder="https://..."
               />
             </div>
             <div className="flex items-center justify-between border rounded-lg p-3">
-              <Label className="cursor-pointer">Featured</Label>
+              <span
+                id="product-featured-label"
+                className="text-sm font-medium leading-none cursor-pointer"
+              >
+                Featured
+              </span>
               <Switch
+                aria-labelledby="product-featured-label"
                 checked={form.featured}
                 onCheckedChange={(v) => setForm((f) => ({ ...f, featured: v }))}
               />

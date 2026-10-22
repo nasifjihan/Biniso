@@ -53,7 +53,9 @@ export default function SuccessPage() {
                 <span className="text-muted-foreground">
                   Discount{couponCode ? ` (${couponCode})` : ""}
                 </span>
-                <span className="text-emerald-600">- ৳ {discount}</span>
+                <span className="text-emerald-700 dark:text-emerald-400">
+                  - ৳ {discount}
+                </span>
               </div>
             )}
             {deliveryFee && (

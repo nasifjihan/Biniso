@@ -107,6 +107,15 @@ export default function CheckoutPage() {
     });
   }
 
+  // Ties a rejected field to the message explaining why, so the reason is read
+  // out with the field rather than silently appearing below it.
+  const errorProps = (field) =>
+    fieldErrors[field]
+      ? { "aria-invalid": true, "aria-describedby": `${field}-error` }
+      : {};
+
+  const couponError = Boolean(fieldErrors.coupon_code) && !coupon;
+
   const deliveryFee = useMemo(() => {
     const zone = zones.find((z) => z.code === deliveryMethod);
     return zone ? Number(zone.fee) : 0;
@@ -232,8 +241,17 @@ export default function CheckoutPage() {
                   value={coupon?.code || ""}
                 />
                 {addresses.length > 0 && (
-                  <div className="space-y-2">
-                    <Label>Saved addresses</Label>
+                  <div
+                    className="space-y-2"
+                    role="group"
+                    aria-labelledby="saved-addresses"
+                  >
+                    <span
+                      id="saved-addresses"
+                      className="block text-sm font-medium leading-none"
+                    >
+                      Saved addresses
+                    </span>
                     <div className="space-y-2">
                       {addresses.map((address) => (
                         <button
@@ -265,6 +283,7 @@ export default function CheckoutPage() {
                       name="name"
                       required
                       placeholder="Your name"
+                      {...errorProps("name")}
                       value={form.name}
                       onChange={(e) =>
                         setForm((current) => ({
@@ -274,7 +293,9 @@ export default function CheckoutPage() {
                       }
                     />
                     {fieldErrors.name && (
-                      <p className="text-sm text-destructive">{fieldErrors.name}</p>
+                      <p id="name-error" className="text-sm text-destructive">
+                        {fieldErrors.name}
+                      </p>
                     )}
                   </div>
                   <div className="space-y-2">
@@ -284,6 +305,7 @@ export default function CheckoutPage() {
                       name="phone"
                       required
                       placeholder="01XXXXXXXXX"
+                      {...errorProps("phone")}
                       value={form.phone}
                       onChange={(e) =>
                         setForm((current) => ({
@@ -293,7 +315,9 @@ export default function CheckoutPage() {
                       }
                     />
                     {fieldErrors.phone && (
-                      <p className="text-sm text-destructive">{fieldErrors.phone}</p>
+                      <p id="phone-error" className="text-sm text-destructive">
+                        {fieldErrors.phone}
+                      </p>
                     )}
                   </div>
                 </div>
@@ -301,9 +325,17 @@ export default function CheckoutPage() {
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="email">Email (optional)</Label>
-                    <Input id="email" name="email" type="email" placeholder="you@email.com" />
+                    <Input
+                      id="email"
+                      name="email"
+                      type="email"
+                      placeholder="you@email.com"
+                      {...errorProps("email")}
+                    />
                     {fieldErrors.email && (
-                      <p className="text-sm text-destructive">{fieldErrors.email}</p>
+                      <p id="email-error" className="text-sm text-destructive">
+                        {fieldErrors.email}
+                      </p>
                     )}
                   </div>
                   <div className="space-y-2">
@@ -312,6 +344,7 @@ export default function CheckoutPage() {
                       id="city"
                       name="city"
                       placeholder="e.g. Dhaka"
+                      {...errorProps("city")}
                       value={form.city}
                       onChange={(e) =>
                         setForm((current) => ({
@@ -321,7 +354,9 @@ export default function CheckoutPage() {
                       }
                     />
                     {fieldErrors.city && (
-                      <p className="text-sm text-destructive">{fieldErrors.city}</p>
+                      <p id="city-error" className="text-sm text-destructive">
+                        {fieldErrors.city}
+                      </p>
                     )}
                   </div>
                 </div>
@@ -334,6 +369,7 @@ export default function CheckoutPage() {
                     required
                     placeholder="House, road, area"
                     className="min-h-24"
+                    {...errorProps("address")}
                     value={form.address}
                     onChange={(e) =>
                       setForm((current) => ({
@@ -343,7 +379,9 @@ export default function CheckoutPage() {
                     }
                   />
                   {fieldErrors.address && (
-                    <p className="text-sm text-destructive">{fieldErrors.address}</p>
+                    <p id="address-error" className="text-sm text-destructive">
+                      {fieldErrors.address}
+                    </p>
                   )}
                 </div>
 
@@ -360,13 +398,21 @@ export default function CheckoutPage() {
                 )}
 
                 <div className="space-y-2">
-                  <Label>Delivery</Label>
+                  <span
+                    id="delivery-method-label"
+                    className="block text-sm font-medium leading-none"
+                  >
+                    Delivery
+                  </span>
                   <Select
                     value={deliveryMethod}
                     onValueChange={setDeliveryMethod}
                     disabled={zones.length === 0}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger
+                      aria-labelledby="delivery-method-label"
+                      {...errorProps("delivery_method")}
+                    >
                       <SelectValue placeholder="Loading delivery options..." />
                     </SelectTrigger>
                     <SelectContent>
@@ -378,7 +424,10 @@ export default function CheckoutPage() {
                     </SelectContent>
                   </Select>
                   {fieldErrors.delivery_method && (
-                    <p className="text-sm text-destructive">
+                    <p
+                      id="delivery_method-error"
+                      className="text-sm text-destructive"
+                    >
                       {fieldErrors.delivery_method}
                     </p>
                   )}
@@ -386,9 +435,16 @@ export default function CheckoutPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="notes">Notes (optional)</Label>
-                  <Textarea id="notes" name="notes" placeholder="Any instruction" />
+                  <Textarea
+                    id="notes"
+                    name="notes"
+                    placeholder="Any instruction"
+                    {...errorProps("notes")}
+                  />
                   {fieldErrors.notes && (
-                    <p className="text-sm text-destructive">{fieldErrors.notes}</p>
+                    <p id="notes-error" className="text-sm text-destructive">
+                      {fieldErrors.notes}
+                    </p>
                   )}
                 </div>
 
@@ -446,6 +502,8 @@ export default function CheckoutPage() {
                     onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
                     placeholder="Promo code"
                     aria-label="Promo code"
+                    aria-invalid={couponError || undefined}
+                    aria-describedby={couponError ? "coupon-code-error" : undefined}
                     className="flex-1"
                   />
                   <Button
@@ -458,8 +516,10 @@ export default function CheckoutPage() {
                   </Button>
                 </div>
               )}
-              {fieldErrors.coupon_code && !coupon && (
-                <p className="text-sm text-destructive">{fieldErrors.coupon_code}</p>
+              {couponError && (
+                <p id="coupon-code-error" className="text-sm text-destructive">
+                  {fieldErrors.coupon_code}
+                </p>
               )}
 
               {discount > 0 && (
@@ -467,7 +527,9 @@ export default function CheckoutPage() {
                   <span className="text-muted-foreground">
                     Discount{coupon ? ` (${coupon.code})` : ""}
                   </span>
-                  <span className="text-emerald-600">- ৳ {discount}</span>
+                  <span className="text-emerald-700 dark:text-emerald-400">
+                    - ৳ {discount}
+                  </span>
                 </div>
               )}
 

@@ -209,12 +209,12 @@ export default function AdminProducts() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Status</Label>
+                  <Label htmlFor="product-status">Status</Label>
                   <Select
                     value={form.status}
                     onValueChange={(v) => setForm((f) => ({ ...f, status: v }))}
                   >
-                    <SelectTrigger className="w-full">
+                    <SelectTrigger id="product-status" className="w-full">
                       <SelectValue placeholder="Select status" />
                     </SelectTrigger>
                     <SelectContent>
@@ -228,7 +228,7 @@ export default function AdminProducts() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Category</Label>
+                  <Label htmlFor="product-category">Category</Label>
                   <Select
                     value={form.categoryId || NO_CATEGORY}
                     onValueChange={(v) =>
@@ -238,7 +238,7 @@ export default function AdminProducts() {
                       }))
                     }
                   >
-                    <SelectTrigger className="w-full">
+                    <SelectTrigger id="product-category" className="w-full">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>

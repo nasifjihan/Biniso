@@ -6,7 +6,6 @@ import { createProductImage } from "@/app/actions/createProductImage";
 import { deleteProductImage } from "@/app/actions/deleteProductImage";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Trash2 } from "lucide-react";
 
 export default function ImageGalleryEditor({
@@ -73,7 +72,7 @@ export default function ImageGalleryEditor({
   return (
     <div className="space-y-3 border rounded-xl p-3">
       <div className="flex items-center justify-between">
-        <Label>Gallery</Label>
+        <span className="text-sm font-medium leading-none">Gallery</span>
         <span className="text-xs text-muted-foreground">
           The product image above stays the card thumbnail
         </span>
@@ -81,7 +80,7 @@ export default function ImageGalleryEditor({
 
       {ordered.length > 0 ? (
         <div className="flex flex-wrap gap-3">
-          {ordered.map((image) => (
+          {ordered.map((image, index) => (
             <div key={image.id} className="relative">
               <Image
                 src={image.url}
@@ -96,6 +95,7 @@ export default function ImageGalleryEditor({
                 size="icon-xs"
                 variant="secondary"
                 className="absolute -top-2 -right-2 rounded-full"
+                aria-label={`Remove gallery image ${index + 1}`}
                 onClick={() => handleRemove(image.id)}
               >
                 <Trash2 className="size-3" />
@@ -115,6 +115,7 @@ export default function ImageGalleryEditor({
         accept="image/*"
         multiple
         disabled={uploading}
+        aria-label="Add gallery images"
         onChange={(e) => handleUpload(Array.from(e.target.files || []))}
       />
 

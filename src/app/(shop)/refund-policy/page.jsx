@@ -1,7 +1,10 @@
-export const metadata = {
-  title: "Refund & Return Policy | Biniso",
+import { pageMetadata } from "@/lib/seo";
+
+export const metadata = pageMetadata({
+  title: "Refund & Return Policy",
   description: "How returns, exchanges and refunds work at Biniso.",
-};
+  path: "/refund-policy",
+});
 
 export default function RefundPolicyPage() {
   return (

@@ -24,10 +24,14 @@ export default function Navbar() {
           <Link href="/products">Products</Link>
           <Link href="/checkout">Checkout</Link>
 
-          <Link href="/cart" className="relative">
+          <Link
+            href="/cart"
+            aria-label={count > 0 ? `Cart, ${count} items` : "Cart"}
+            className="relative"
+          >
             🛒
             {count > 0 && (
-              <span className="absolute -top-2 -right-3 bg-red-500 text-white text-xs px-2 rounded-full">
+              <span className="absolute -top-2 -right-3 bg-red-600 text-white text-xs px-2 rounded-full">
                 {count}
               </span>
             )}
@@ -40,7 +44,15 @@ export default function Navbar() {
               </Link>
             </Button>
             <Button variant="outline" size="icon" asChild>
-              <Link href="/favorites" className="relative">
+              <Link
+                href="/favorites"
+                aria-label={
+                  favoriteCount > 0
+                    ? `Favourites, ${favoriteCount} saved`
+                    : "Favourites"
+                }
+                className="relative"
+              >
                 <Heart className="size-4" />
                 {favoriteCount > 0 && (
                   <span className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-[10px] px-1.5 rounded-full">
