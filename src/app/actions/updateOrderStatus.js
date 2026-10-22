@@ -2,6 +2,7 @@
 
 import { createSupabaseServerClient, requireAdmin } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { sendOrderStatusEmail } from "@/lib/email";
 
 const ALLOWED_STATUSES = [
   "pending",
@@ -10,6 +11,36 @@ const ALLOWED_STATUSES = [
   "delivered",
   "cancelled",
 ];
+
+// Tell the customer their order moved on. Best effort on purpose: the status is
+// already saved, so a mail problem must not report the update as failed.
+async function notifyCustomer(supabase, id, status) {
+  try {
+    const { data: order } = await supabase
+      .from("orders")
+      .select("id, customer_name, email, total")
+      .eq("id", id)
+      .maybeSingle();
+
+    if (!order?.email) return;
+
+    const { data: items } = await supabase
+      .from("order_items")
+      .select("quantity, price, variant_label, products ( name )")
+      .eq("order_id", id);
+
+    const lines = (items || []).map((item) => ({
+      name: item.products?.name || "Item",
+      variant_label: item.variant_label,
+      quantity: item.quantity,
+      price: item.price,
+    }));
+
+    await sendOrderStatusEmail({ ...order, items: lines }, status);
+  } catch {
+    // Nothing to do: the customer simply misses one notification.
+  }
+}
 
 export async function updateOrderStatus(id, status) {
   if (!id) return { ok: false, error: "Missing order id" };
@@ -86,6 +117,8 @@ export async function updateOrderStatus(id, status) {
       }
     }
 
+    await notifyCustomer(supabase, id, status);
+
     return { ok: true, data: claimed[0] };
   }
 
@@ -103,6 +136,8 @@ export async function updateOrderStatus(id, status) {
         "No rows were updated. This usually means the row was blocked by RLS policy or the id does not exist.",
     };
   }
+
+  await notifyCustomer(supabase, id, status);
 
   return { ok: true, data: data[0] };
 }

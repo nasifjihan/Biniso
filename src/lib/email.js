@@ -63,6 +63,44 @@ function buildOrderHtml(order, heading) {
   `;
 }
 
+// What the customer is told for each status worth an email. `pending` is the
+// state the confirmation email already covers.
+const STATUS_EMAILS = {
+  confirmed: {
+    subject: "Your order is confirmed",
+    heading: "Order confirmed",
+    message:
+      "We have received your order and it is now being prepared for delivery.",
+  },
+  shipped: {
+    subject: "Your order is on the way",
+    heading: "Order shipped",
+    message: "Your order has left our store and is on its way to you.",
+  },
+  delivered: {
+    subject: "Your order has been delivered",
+    heading: "Order delivered",
+    message: "Your order has been delivered. We hope you enjoy it!",
+  },
+  cancelled: {
+    subject: "Your order has been cancelled",
+    heading: "Order cancelled",
+    message:
+      "Your order has been cancelled and anything reserved for it is back in stock. If you did not expect this, please contact us.",
+  },
+};
+
+function buildStatusHtml(order, copy) {
+  return `
+    <h2>${copy.heading}</h2>
+    <p>Hi ${order.customer_name},</p>
+    <p>${copy.message}</p>
+    <p>Order ID: ${order.id}</p>
+    ${formatItems(order.items)}
+    <p><strong>Total: ৳ ${order.total}</strong></p>
+  `;
+}
+
 // Notification to the store owner.
 export async function sendOrderEmail(order) {
   const to = process.env.ORDER_RECEIVER_EMAIL || order?.email;
@@ -93,5 +131,22 @@ export async function sendOrderConfirmation(order) {
     });
   } catch (e) {
     throw new Error(e?.message || "Failed to send confirmation email");
+  }
+}
+
+// Progress update for the customer. Statuses without copy send nothing.
+export async function sendOrderStatusEmail(order, status) {
+  const copy = STATUS_EMAILS[status];
+  if (!copy || !order?.email || !process.env.RESEND_API_KEY) return;
+
+  try {
+    await resend.emails.send({
+      from: fromAddress(),
+      to: order.email,
+      subject: `${copy.subject} — ${order.id}`,
+      html: buildStatusHtml(order, copy),
+    });
+  } catch (e) {
+    throw new Error(e?.message || "Failed to send status email");
   }
 }
