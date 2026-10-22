@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getUser } from "@/lib/supabase/server";
 import { signOut } from "@/app/actions/signOut";
+import LogOutButton from "@/components/Account/LogOutButton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -45,10 +46,13 @@ export default async function AccountPage() {
           <Link href="/account/orders">My orders</Link>
         </Button>
         <Button variant="outline" asChild>
+          <Link href="/account/addresses">My addresses</Link>
+        </Button>
+        <Button variant="outline" asChild>
           <Link href="/products">Continue shopping</Link>
         </Button>
         <form action={signOut}>
-          <Button variant="destructive">Log out</Button>
+          <LogOutButton />
         </form>
       </div>
     </div>

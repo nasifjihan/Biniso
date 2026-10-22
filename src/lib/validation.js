@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 // Bangladeshi mobile numbers: optional +88/88 prefix, then 01[3-9] and 8 digits.
-const BD_PHONE = /^(?:\+?88)?01[3-9]\d{8}$/;
+export const BD_PHONE = /^(?:\+?88)?01[3-9]\d{8}$/;
 
 /** Shape of a validated checkout submission. Empty optional strings become `null`. */
 export const checkoutSchema = z.object({

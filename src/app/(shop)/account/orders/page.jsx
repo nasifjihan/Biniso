@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getUser } from "@/lib/supabase/server";
-import { getCustomerOrders, orderStatusVariant } from "@/lib/orders";
+import { getCustomerOrders } from "@/lib/orders";
+import { orderStatusVariant } from "@/lib/orderStatus";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";

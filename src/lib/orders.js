@@ -55,11 +55,3 @@ export async function getCustomerOrders(userId) {
   if (error) throw error;
   return data;
 }
-
-// The colour language used for a status, shared by the admin and customer lists.
-export function orderStatusVariant(status) {
-  if (status === "pending") return "secondary";
-  if (status === "cancelled") return "destructive";
-  if (status === "confirmed") return "default";
-  return "outline";
-}

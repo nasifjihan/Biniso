@@ -71,6 +71,13 @@ export default function SuccessPage() {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3">
+            {orderId && (
+              <Button className="flex-1" variant="outline" asChild>
+                <Link href={`/track?id=${encodeURIComponent(orderId)}`}>
+                  Track this order
+                </Link>
+              </Button>
+            )}
             <Button className="flex-1" asChild>
               <Link href="/products">Continue Shopping</Link>
             </Button>

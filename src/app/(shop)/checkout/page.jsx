@@ -5,6 +5,8 @@ import { useCartStore } from "@/store/cartStore";
 import { supabase } from "@/lib/supabaseClient";
 import { createOrder } from "../../actions/createOrder";
 import { validateCoupon } from "@/app/actions/validateCoupon";
+import { createAddress } from "@/app/actions/createAddress";
+import { ADDRESS_COLUMNS } from "@/lib/addresses";
 import { parseCheckoutForm } from "@/lib/validation";
 import { describeZone } from "@/lib/shipping";
 import { useRouter } from "next/navigation";
@@ -34,6 +36,17 @@ export default function CheckoutPage() {
   const [couponCode, setCouponCode] = useState("");
   const [coupon, setCoupon] = useState(null);
   const [applying, setApplying] = useState(false);
+  const [signedIn, setSignedIn] = useState(false);
+  const [addresses, setAddresses] = useState([]);
+  const [saveAddress, setSaveAddress] = useState(false);
+  // The name, phone, city and address fields are controlled so a saved address
+  // can fill them in.
+  const [form, setForm] = useState({
+    name: "",
+    phone: "",
+    city: "",
+    address: "",
+  });
 
   useEffect(() => {
     let active = true;
@@ -54,11 +67,45 @@ export default function CheckoutPage() {
       setDeliveryMethod((current) => current || available[0]?.code || "");
     }
 
+    // A signed-out customer is a guest, so there is nothing to load here and no
+    // address to offer to save.
+    async function loadAccount() {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!active || !user) return;
+      setSignedIn(true);
+
+      const { data, error: addressesError } = await supabase
+        .from("addresses")
+        .select(ADDRESS_COLUMNS)
+        .order("created_at", { ascending: false });
+
+      if (!active || addressesError) return;
+
+      const saved = data || [];
+      setAddresses(saved);
+      // The most recent address is filled in, so a repeat customer only has to
+      // confirm it.
+      if (saved[0]) applyAddress(saved[0]);
+    }
+
     loadZones();
+    loadAccount();
     return () => {
       active = false;
     };
   }, []);
+
+  function applyAddress(address) {
+    setForm({
+      name: address.name || "",
+      phone: address.phone || "",
+      city: address.city || "",
+      address: address.address || "",
+    });
+  }
 
   const deliveryFee = useMemo(() => {
     const zone = zones.find((z) => z.code === deliveryMethod);
@@ -116,6 +163,14 @@ export default function CheckoutPage() {
 
     if (res.emailWarning) {
       toast.message("Order placed, but email failed");
+    }
+
+    // The order is already placed, so a failed save is only worth a toast.
+    if (signedIn && saveAddress) {
+      const saved = await createAddress(form);
+      if (!saved?.ok) {
+        toast.error(saved?.error || "Could not save that address");
+      }
     }
 
     const nextParams = new URLSearchParams();
@@ -176,10 +231,48 @@ export default function CheckoutPage() {
                   name="coupon_code"
                   value={coupon?.code || ""}
                 />
+                {addresses.length > 0 && (
+                  <div className="space-y-2">
+                    <Label>Saved addresses</Label>
+                    <div className="space-y-2">
+                      {addresses.map((address) => (
+                        <button
+                          key={address.id}
+                          type="button"
+                          onClick={() => applyAddress(address)}
+                          className="w-full text-left border rounded-xl px-3 py-2 text-sm hover:bg-muted"
+                        >
+                          <span className="font-medium">{address.name}</span>
+                          <span className="text-muted-foreground">
+                            {" "}
+                            · {address.phone}
+                          </span>
+                          <div className="text-muted-foreground">
+                            {address.address}
+                            {address.city ? `, ${address.city}` : ""}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="name">Full name</Label>
-                    <Input id="name" name="name" required placeholder="Your name" />
+                    <Input
+                      id="name"
+                      name="name"
+                      required
+                      placeholder="Your name"
+                      value={form.name}
+                      onChange={(e) =>
+                        setForm((current) => ({
+                          ...current,
+                          name: e.target.value,
+                        }))
+                      }
+                    />
                     {fieldErrors.name && (
                       <p className="text-sm text-destructive">{fieldErrors.name}</p>
                     )}
@@ -191,6 +284,13 @@ export default function CheckoutPage() {
                       name="phone"
                       required
                       placeholder="01XXXXXXXXX"
+                      value={form.phone}
+                      onChange={(e) =>
+                        setForm((current) => ({
+                          ...current,
+                          phone: e.target.value,
+                        }))
+                      }
                     />
                     {fieldErrors.phone && (
                       <p className="text-sm text-destructive">{fieldErrors.phone}</p>
@@ -208,7 +308,18 @@ export default function CheckoutPage() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="city">City (optional)</Label>
-                    <Input id="city" name="city" placeholder="e.g. Dhaka" />
+                    <Input
+                      id="city"
+                      name="city"
+                      placeholder="e.g. Dhaka"
+                      value={form.city}
+                      onChange={(e) =>
+                        setForm((current) => ({
+                          ...current,
+                          city: e.target.value,
+                        }))
+                      }
+                    />
                     {fieldErrors.city && (
                       <p className="text-sm text-destructive">{fieldErrors.city}</p>
                     )}
@@ -223,11 +334,30 @@ export default function CheckoutPage() {
                     required
                     placeholder="House, road, area"
                     className="min-h-24"
+                    value={form.address}
+                    onChange={(e) =>
+                      setForm((current) => ({
+                        ...current,
+                        address: e.target.value,
+                      }))
+                    }
                   />
                   {fieldErrors.address && (
                     <p className="text-sm text-destructive">{fieldErrors.address}</p>
                   )}
                 </div>
+
+                {signedIn && (
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={saveAddress}
+                      onChange={(e) => setSaveAddress(e.target.checked)}
+                      className="size-4"
+                    />
+                    Save this address to my account
+                  </label>
+                )}
 
                 <div className="space-y-2">
                   <Label>Delivery</Label>

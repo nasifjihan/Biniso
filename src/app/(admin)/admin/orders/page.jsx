@@ -1,4 +1,5 @@
-import { getAllOrders, orderStatusVariant } from "@/lib/orders";
+import { getAllOrders } from "@/lib/orders";
+import { orderStatusVariant } from "@/lib/orderStatus";
 import { Badge } from "@/components/ui/badge";
 import OrderStatusButtons from "@/components/OrderStatusButtons";
 import Link from "next/link";
