@@ -3,11 +3,65 @@
 import { headers } from "next/headers";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getUser } from "@/lib/supabase/server";
-import { sendOrderEmail, sendOrderConfirmation } from "@/lib/email";
+import { sendOrderEmail, sendOrderConfirmation, sendLowStockEmail } from "@/lib/email";
 import { rateLimit } from "@/lib/rateLimit";
 import { parseCheckoutForm } from "@/lib/validation";
 import { variantLabel } from "@/lib/variants";
+import { LOW_STOCK_THRESHOLD } from "@/lib/inventory";
 import { COUPON_COLUMNS, checkCoupon, normaliseCode } from "@/lib/coupons";
+
+/**
+ * Tells the store owner when the order that was just placed pushed a tracked line
+ * to or below the low-stock threshold. A line with `stock = null` is not tracked,
+ * so it can never run low.
+ *
+ * Best effort on purpose: the order is already placed, so a mail problem only
+ * means the owner misses one alert.
+ */
+async function alertLowStock(supabase, items) {
+  try {
+    const productIds = items
+      .filter((item) => !item.variant_id)
+      .map((item) => item.product_id);
+    const variantIds = items
+      .filter((item) => item.variant_id)
+      .map((item) => item.variant_id);
+    const low = [];
+
+    if (productIds.length > 0) {
+      const { data } = await supabase
+        .from("products")
+        .select("name, stock")
+        .in("id", productIds)
+        .not("stock", "is", null)
+        .lte("stock", LOW_STOCK_THRESHOLD);
+
+      for (const product of data || []) {
+        low.push({ name: product.name, stock: product.stock });
+      }
+    }
+
+    if (variantIds.length > 0) {
+      const { data } = await supabase
+        .from("product_variants")
+        .select("attributes, sku, stock, products ( name )")
+        .in("id", variantIds)
+        .not("stock", "is", null)
+        .lte("stock", LOW_STOCK_THRESHOLD);
+
+      for (const variant of data || []) {
+        low.push({
+          name: `${variant.products?.name || "Product"} (${variantLabel(variant)})`,
+          stock: variant.stock,
+        });
+      }
+    }
+
+    if (low.length > 0) await sendLowStockEmail(low);
+  } catch {
+    // Nothing to do: the owner simply misses one alert.
+  }
+}
 
 export async function createOrder(formData, cart) {
   try {
@@ -326,6 +380,10 @@ export async function createOrder(formData, cart) {
     } catch (e) {
       return { ...result, emailWarning: e?.message || "Email failed" };
     }
+
+    // The lines are reserved, so anything now at or below the threshold is worth
+    // telling the owner about. Never blocks the order.
+    await alertLowStock(supabase, items);
 
     return result;
   } catch (e) {

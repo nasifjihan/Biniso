@@ -150,3 +150,44 @@ export async function sendOrderStatusEmail(order, status) {
     throw new Error(e?.message || "Failed to send status email");
   }
 }
+
+// Alert to the store owner. Sent from the checkout when a sale pushes a tracked
+// product to or below the low-stock threshold.
+export async function sendLowStockEmail(items) {
+  const to = process.env.ORDER_RECEIVER_EMAIL;
+  if (!to || !process.env.RESEND_API_KEY || !items?.length) return;
+
+  const rows = items
+    .map(
+      (item) => `
+        <tr>
+          <td style="padding:4px 8px;border:1px solid #ddd">${item.name}</td>
+          <td style="padding:4px 8px;border:1px solid #ddd;text-align:center">${item.stock}</td>
+        </tr>`,
+    )
+    .join("");
+
+  const html = `
+    <h2>Low stock</h2>
+    <p>These products have sold down to the alert level and need restocking:</p>
+    <table style="border-collapse:collapse;margin-top:8px">
+      <thead>
+        <tr>
+          <th style="padding:4px 8px;border:1px solid #ddd;text-align:left">Product</th>
+          <th style="padding:4px 8px;border:1px solid #ddd">Left</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+
+  try {
+    await resend.emails.send({
+      from: fromAddress(),
+      to,
+      subject: `Low stock: ${items.length} product${items.length > 1 ? "s" : ""}`,
+      html,
+    });
+  } catch (e) {
+    throw new Error(e?.message || "Failed to send low-stock email");
+  }
+}

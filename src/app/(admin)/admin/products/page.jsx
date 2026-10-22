@@ -1,10 +1,13 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useTransition } from "react";
 import Image from "next/image";
+import { toast } from "sonner";
 import { supabase } from "@/lib/supabaseClient";
 import { createProduct } from "@/app/actions/createProduct";
+import { bulkUpdateProductStatus } from "@/app/actions/bulkUpdateProductStatus";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import ProductItem from "@/components/Admin/ProductItem";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -37,6 +40,9 @@ export default function AdminProducts() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [selectedProductId, setSelectedProductId] = useState("");
+  const [selected, setSelected] = useState([]);
+  const [bulkStatus, setBulkStatus] = useState("active");
+  const [bulkPending, startBulk] = useTransition();
   const [form, setForm] = useState({
     name: "",
     price: "",
@@ -142,6 +148,28 @@ export default function AdminProducts() {
     } finally {
       setSaving(false);
     }
+  }
+
+  const allSelected = products.length > 0 && selected.length === products.length;
+
+  function toggleSelected(id) {
+    setSelected((current) =>
+      current.includes(id) ? current.filter((value) => value !== id) : [...current, id],
+    );
+  }
+
+  function applyBulkStatus() {
+    startBulk(async () => {
+      const result = await bulkUpdateProductStatus(selected, bulkStatus);
+      if (!result?.ok) {
+        toast.error(result?.error || "Failed to update products");
+        return;
+      }
+
+      toast.success(`Updated ${result.updated} product(s)`);
+      setSelected([]);
+      await fetchProducts();
+    });
   }
 
   return (
@@ -330,9 +358,53 @@ export default function AdminProducts() {
             <div className="text-muted-foreground">No products found.</div>
           )}
           {!loading && products.length > 0 && (
+            <div className="flex flex-wrap items-center gap-3 rounded-xl border p-3">
+              <label className="flex items-center gap-2 text-sm">
+                <Checkbox
+                  checked={allSelected}
+                  onCheckedChange={() =>
+                    setSelected(allSelected ? [] : products.map((p) => p.id))
+                  }
+                  aria-label="Select all products"
+                />
+                Select all
+              </label>
+
+              <span className="text-sm text-muted-foreground">
+                {selected.length} selected
+              </span>
+
+              <div className="flex flex-1 flex-wrap items-center justify-end gap-2">
+                <Select value={bulkStatus} onValueChange={setBulkStatus}>
+                  <SelectTrigger className="w-36">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
+                    <SelectItem value="draft">Draft</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Button
+                  size="sm"
+                  onClick={applyBulkStatus}
+                  disabled={bulkPending || selected.length === 0}
+                >
+                  {bulkPending ? "Applying..." : "Apply to selected"}
+                </Button>
+
+                <Button size="sm" variant="outline" asChild>
+                  <a href="/api/admin/export/products">Export CSV</a>
+                </Button>
+              </div>
+            </div>
+          )}
+          {!loading && products.length > 0 && (
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-10" />
                   <TableHead>Image</TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>Category</TableHead>
@@ -346,6 +418,13 @@ export default function AdminProducts() {
               <TableBody>
                 {products.map((p) => (
                   <TableRow key={p.id}>
+                    <TableCell>
+                      <Checkbox
+                        checked={selected.includes(p.id)}
+                        onCheckedChange={() => toggleSelected(p.id)}
+                        aria-label={`Select ${p.name}`}
+                      />
+                    </TableCell>
                     <TableCell>
                       {p.image ? (
                         <Image

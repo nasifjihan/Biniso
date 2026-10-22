@@ -40,6 +40,9 @@ export default function AdminLayout({ children }) {
               <Button variant="ghost" asChild>
                 <Link href="/admin/shipping">Delivery</Link>
               </Button>
+              <Button variant="ghost" asChild>
+                <Link href="/admin/users">Users</Link>
+              </Button>
             </nav>
           </div>
 
