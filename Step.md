@@ -52,7 +52,7 @@ npm run dev
 ## Project layout
 
 - `src/app/(shop)` — public storefront
-- `src/app/(admin)` — admin dashboard (protected by `middleware.js`)
+- `src/app/(admin)` — admin dashboard (protected by `src/middleware.js`)
 - `src/app/actions` — server actions (orders, products)
 - `src/app/api/upload` — Cloudinary image upload endpoint
 - `src/lib/supabase` — Supabase clients (browser / server / service-role)

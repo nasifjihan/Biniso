@@ -34,7 +34,7 @@ Full details, including the environment variable reference, are in
 
 ## Security model
 
-- `/admin/*` is guarded by `middleware.js`, which requires an authenticated user
+- `/admin/*` is guarded by `src/middleware.js`, which requires an authenticated user
   with `app_metadata.role = 'admin'`.
 - Supabase RLS keeps `products` publicly readable (active items only) while all
   writes and all `orders` / `order_items` access are admin-only.
